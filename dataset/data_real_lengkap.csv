@@ -1,0 +1,133 @@
+ID Anak;JK;ASD;Usia;Konteks;Ujaran Anak;Struktur Sintaksis;MLU;Echolalia;Ujaran Bersih;Token;Kategori Pemahaman
+A001;L;ASD-1;"6;2";Bermain;Aku mau mobil;S+P+O;3;Tidak;aku mau mobil;['aku', 'mau', 'mobil'];Sudah Mahir
+A001;L;ASD-1;"6;2";Bermain;Mobil ini cepat;S+P+Ket;3;Tidak;mobil ini cepat;['mobil', 'ini', 'cepat'];Sudah Mahir
+A002;P;ASD-1;"7;1";Percakapan;Saya sudah makan tadi;S+P+O+Ket;4;Tidak;saya sudah makan tadi;['saya', 'sudah', 'makan', 'tadi'];Sudah Mahir
+A002;P;ASD-1;"7;1";Bercerita;Kucing tidur di kursi;S+P+Ket;4;Tidak;kucing tidur di kursi;['kucing', 'tidur', 'di', 'kursi'];Sudah Mahir
+A003;L;ASD-1;"6;8";Deskripsi Gambar;Anak bermain bola;S+P+O;3;Tidak;anak bermain bola;['anak', 'bermain', 'bola'];Sudah Mahir
+A003;L;ASD-1;"6;8";Percakapan;Aku tidak (suka) suara keras;S+P+O;4;Tidak;aku tidak suka suara keras;['aku', 'tidak', 'suka', 'suara', 'keras'];Sudah Mahir
+A004;P;ASD-1;"8;0";Bercerita;Kemarin aku ke kebun binatang;Ket+S+Ket;5;Tidak;kemarin aku ke kebun binatang;['kemarin', 'aku', 'ke', 'kebun', 'binatang'];Sudah Mahir
+A004;P;ASD-1;"8;0";Bermain;Boneka baju baru;S+P+O;3;Tidak;boneka baju baru;['boneka', 'baju', 'baru'];Sudah Mahir
+A005;L;ASD-1;"7;5";Instruksi;Aku simpan buku ;S+P+O;3;Tidak;aku simpan buku;['aku', 'simpan', 'buku'];Sudah Mahir
+A005;L;ASD-1;"7;5";Percakapan;Besok aku naik kereta;Ket+S+P+O;4;Tidak;besok aku naik kereta;['besok', 'aku', 'naik', 'kereta'];Sudah Mahir
+A006;L;ASD-2;"7;0";Bermain;Mau mobil merah;P+O;3;Tidak;mau mobil merah;['mau', 'mobil', 'merah'];Berkembang Sedang
+A006;L;ASD-2;"7;0";Bermain;Mobil jalan cepat;S+P+Ket;3;Tidak;mobil jalan cepat;['mobil', 'jalan', 'cepat'];Sudah Mahir
+A007;P;ASD-2;"8;1";Percakapan;Minum susu;P+O;2;Tidak;minum susu;['minum', 'susu'];Berkembang Sedang
+A007;P;ASD-2;"8;1";Deskripsi Gambar;Anak main bola;S+P+O;2;Tidak;anak main bola;['anak', 'main', 'bola'];Berkembang Sedang
+A008;L;ASD-2;"6;9";Bermain;Kereta besar itu;Frasa Nomina;3;Tidak;kereta besar itu;['kereta', 'besar', 'itu'];Berkembang Sedang
+A008;L;ASD-2;"6;9";Instruksi;Sudah taruh;P+O;2;Tidak;sudah taruh;['sudah', 'taruh'];Berkembang Sedang
+A009;P;ASD-2;"7;4";Percakapan;Tidak mau mandi;Negasi+P;3;Tidak;tidak mau mandi;['tidak', 'mau', 'mandi'];Berkembang Sedang
+A009;P;ASD-2;"7;4";Bercerita;Kucing makan ikan;S+P+O;3;Tidak;kucing makan ikan;['kucing', 'makan', 'ikan'];Sudah Mahir
+A010;L;ASD-2;"8;2";Bermain;Mobil merah jatuh;S+P;3;Tidak;mobil merah jatuh;['mobil', 'merah', 'jatuh'];Berkembang Sedang
+A010;L;ASD-2;"8;2";Percakapan;Aku mau itu;S+P+O;3;Tidak;aku mau itu;['aku', 'mau', 'itu'];Sudah Mahir
+A011;L;ASD-2;"7;6";Deskripsi Gambar;Anak lari cepat;S+P+Ket;3;Tidak;anak lari cepat;['anak', 'lari', 'cepat'];Sudah Mahir
+A011;L;ASD-2;"7;6";Bermain;Kereta masuk terowongan;S+P+O;3;Tidak;kereta masuk terowongan;['kereta', 'masuk', 'terowongan'];Sudah Mahir
+A012;P;ASD-2;"8;0";Percakapan;Ibu pergi kerja;S+P+Ket;3;Tidak;ibu pergi kerja;['ibu', 'pergi', 'kerja'];Sudah Mahir
+A012;P;ASD-2;"8;0";Bermain;Mau lagi main;P+Ket;3;Tidak;mau lagi main;['mau', 'lagi', 'main'];Berkembang Sedang
+A013;L;ASD-3;"7;8";Bermain;Mobil;Kata Tunggal;1;Tidak;mobil;['mobil'];Belum Berkembang
+A013;L;ASD-3;"7;8";Bermain;Bola;Kata Tunggal;1;Tidak;bola;['bola'];Belum Berkembang
+A014;P;ASD-3;"8;3";Percakapan;Mau;Predikat;1;Tidak;mau;['mau'];Belum Berkembang
+A014;P;ASD-3;"8;3";Percakapan;Minum;Predikat;1;Tidak;minum;['minum'];Belum Berkembang
+A015;L;ASD-3;"9;0";Bermain;Mobil mobil mobil;Repetisi;3;Ya;mobil mobil mobil;['mobil', 'mobil', 'mobil'];Belum Berkembang
+A015;L;ASD-3;"9;0";Bermain;Kereta kereta;Repetisi;2;Ya;kereta kereta;['kereta', 'kereta'];Belum Berkembang
+A016;P;ASD-3;"7;10";Instruksi;Taruh buku meja;P+O;3;Tidak;taruh buku meja;['taruh', 'buku', 'meja'];Berkembang Sedang
+A016;P;ASD-3;"7;10";Bermain;Bola jatuh;S+P;2;Tidak;bola jatuh;['bola', 'jatuh'];Berkembang Sedang
+A017;L;ASD-3;"8;5";Percakapan;Selamat pagi selamat pagi;Echolalia;4;Ya;selamat pagi selamat pagi;['selamat', 'pagi', 'selamat', 'pagi'];Belum Berkembang
+A017;L;ASD-3;"8;5";Percakapan;Apa kabar apa kabar;Echolalia;4;Ya;apa kabar apa kabar;['apa', 'kabar', 'apa', 'kabar'];Belum Berkembang
+A018;P;ASD-3;"7;2";Deskripsi Gambar;Anak;Nomina Tunggal;1;Tidak;anak;['anak'];Belum Berkembang
+A018;P;ASD-3;"7;2";Deskripsi Gambar;Bola merah;Frasa Nomina;2;Tidak;bola merah;['bola', 'merah'];Berkembang Sedang
+A019;L;ASD-3;"8;8";Bermain;Buka buka buka;Repetisi Verbal;3;Ya;buka buka buka;['buka', 'buka', 'buka'];Belum Berkembang
+A019;L;ASD-3;"8;8";Bermain;Putar putar;Repetisi Verbal;2;Ya;putar putar;['putar', 'putar'];Belum Berkembang
+A020;P;ASD-3;"9;1";Percakapan;Mau pulang;P+Ket;2;Tidak;mau pulang;['mau', 'pulang'];Berkembang Sedang
+A020;P;ASD-3;"9;1";Percakapan;Tidak mau;Negasi+P;2;Tidak;tidak mau;['tidak', 'mau'];Berkembang Sedang
+A021;L;ASD-3;"9;3";Bermain;Adudu arah;Neologisme;2;Tidak;adudu arah;['adudu', 'arah'];Belum Berkembang
+A022;L;ASD-3;"10;1";Percakapan;Amalatungi;Neologisme;1;Tidak;amalatungi;['amalatungi'];Belum Berkembang
+A021;L;ASD-1;"6;5";Percakapan;Aku main dengan teman;S+P+Ket;4;Tidak;aku main dengan teman;['aku', 'main', 'dengan', 'teman'];Sudah Mahir
+A021;L;ASD-1;"6;5";Bercerita;Pagi aku lihat burung;Ket+S+P+O;5;Tidak;pagi aku lihat burung;['pagi', 'aku', 'lihat', 'burung'];Sudah Mahir
+A022;P;ASD-1;"7;2";Deskripsi Gambar;Anak membaca buku;S+P+O;3;Tidak;anak membaca buku;['anak', 'membaca', 'buku'];Sudah Mahir
+A022;P;ASD-1;"7;2";Percakapan;Saya senang sekolah;S+P+Ket;3;Tidak;saya senang sekolah;['saya', 'senang', 'sekolah'];Sudah Mahir
+A023;L;ASD-1;"8;0";Bermain;Mobil milik saya;S+P+Pel;3;Tidak;mobil milik saya;['mobil', 'milik', 'saya'];Sudah Mahir
+A023;L;ASD-1;"8;0";Instruksi;Aku merapikan mainan;S+P+O;3;Tidak;aku merapikan mainan;['aku', 'merapikan', 'mainan'];Sudah Mahir
+A024;P;ASD-1;"7;8";Bercerita;Kemarin ayah belikan es krim;Ket+S+P+O;5;Tidak;kemarin ayah belikan es krim;['kemarin', 'ayah', 'belikan', 'es', 'krim'];Sudah Mahir
+A024;P;ASD-1;"7;8";Percakapan;Aku mau belajar gambar;S+P+O;4;Tidak;aku mau belajar gambar;['aku', 'mau', 'belajar', 'gambar'];Sudah Mahir
+A025;L;ASD-1;"8;4";Deskripsi Gambar;Anak bersepeda;S+P;2;Tidak;anak bersepeda;['anak', 'bersepeda'];Berkembang Sedang
+A025;L;ASD-1;"8;4";Percakapan;Aku takut petir ;S+P+O;3;Tidak;aku takut petir;['aku', 'takut', 'petir'];Sudah Mahir
+A026;L;ASD-2;"7;1";Bermain;Mau kereta besar;P+O;3;Tidak;mau kereta besar;['mau', 'kereta', 'besar'];Berkembang Sedang
+A026;L;ASD-2;"7;1";Percakapan;Aku mau makan;S+P;3;Tidak;aku mau makan;['aku', 'mau', 'makan'];Berkembang Sedang
+A027;P;ASD-2;"8;0";Deskripsi Gambar;Anak (pegang) balon;S+P+O;2;Tidak;anak pegang balon;['anak', 'pegang', 'balon'];Berkembang Sedang
+A027;P;ASD-2;"8;0";Bermain;Boneka duduk sini;S+P+Ket;3;Tidak;boneka duduk sini;['boneka', 'duduk', 'sini'];Sudah Mahir
+A028;L;ASD-2;"7;9";Percakapan;Tidak suka ramai;Negasi+P;3;Tidak;tidak suka ramai;['tidak', 'suka', 'ramai'];Berkembang Sedang
+A028;L;ASD-2;"7;9";Instruksi;Sudah simpan tas;P+O;3;Tidak;sudah simpan tas;['sudah', 'simpan', 'tas'];Berkembang Sedang
+A029;P;ASD-2;"8;3";Bermain;Bola masuk kotak;S+P+Ket;3;Tidak;bola masuk kotak;['bola', 'masuk', 'kotak'];Sudah Mahir
+A029;P;ASD-2;"8;3";Percakapan;Mau pulang rumah;P+Ket;3;Tidak;mau pulang rumah;['mau', 'pulang', 'rumah'];Berkembang Sedang
+A030;L;ASD-2;"7;5";Deskripsi Gambar;Kucing tidur sini;S+P+Ket;3;Tidak;kucing tidur sini;['kucing', 'tidur', 'sini'];Sudah Mahir
+A030;L;ASD-2;"7;5";Bermain;Mobil jatuh bawah;S+P+Ket;3;Tidak;mobil jatuh bawah;['mobil', 'jatuh', 'bawah'];Sudah Mahir
+A031;P;ASD-2;"8;1";Percakapan;Aku mau susu;S+P+O;3;Tidak;aku mau susu;['aku', 'mau', 'susu'];Sudah Mahir
+A031;P;ASD-2;"8;1";Bercerita;Adik makan roti;S+P+O;3;Tidak;adik makan roti;['adik', 'makan', 'roti'];Sudah Mahir
+A032;L;ASD-2;"8;5";Bermain;Kereta lewat sini;S+P+Ket;3;Tidak;kereta lewat sini;['kereta', 'lewat', 'sini'];Sudah Mahir
+A032;L;ASD-2;"8;5";Percakapan;Main lagi;P+Ket;3;Tidak;main lagi;['main', 'lagi'];Berkembang Sedang
+A033;L;ASD-3;"7;6";Bermain;Mobil merah;Frasa Nomina;2;Tidak;mobil merah;['mobil', 'merah'];Berkembang Sedang
+A033;L;ASD-3;"7;6";Bermain;Kereta panjang;Frasa Nomina;2;Tidak;kereta panjang;['kereta', 'panjang'];Berkembang Sedang
+A034;P;ASD-3;"8;2";Percakapan;Mau makan;P+O;2;Tidak;mau makan;['mau', 'makan'];Berkembang Sedang
+A034;P;ASD-3;"8;2";Percakapan;Mau tidur;P+Ket;2;Tidak;mau tidur;['mau', 'tidur'];Berkembang Sedang
+A035;L;ASD-3;"9;1";Bermain;Buka pintu buka pintu;Echolalia;4;Ya;buka pintu buka pintu;['buka', 'pintu', 'buka', 'pintu'];Belum Berkembang
+A035;L;ASD-3;"9;1";Bermain;Jalan kereta jalan kereta;Echolalia;4;Ya;jalan kereta jalan kereta;['jalan', 'kereta', 'jalan', 'kereta'];Belum Berkembang
+A036;P;ASD-3;"8;0";Deskripsi Gambar;Lari;P;2;Tidak;lari;['lari'];Berkembang Sedang
+A036;P;ASD-3;"8;0";Deskripsi Gambar;Kucing makan;S+P;2;Tidak;kucing makan;['kucing', 'makan'];Berkembang Sedang
+A037;L;ASD-3;"8;7";Percakapan;Halo halo halo;Repetisi;3;Ya;halo halo halo;['halo', 'halo', 'halo'];Belum Berkembang
+A037;L;ASD-3;"8;7";Percakapan;Sampai jumpa jumpa;Echolalia;4;Ya;sampai jumpa jumpa;['sampai', 'jumpa', 'jumpa'];Belum Berkembang
+A038;P;ASD-3;"7;9";Bermain;Putar putar putar;Repetisi Verbal;3;Ya;putar putar putar;['putar', 'putar', 'putar'];Belum Berkembang
+A038;P;ASD-3;"7;9";Bermain;Lagi lagi lagi;Repetisi Verbal;3;Ya;lagi lagi lagi;['lagi', 'lagi', 'lagi'];Belum Berkembang
+A039;L;ASD-3;"9;3";Percakapan;Tidak mau;Negasi+P;2;Tidak;tidak mau;['tidak', 'mau'];Berkembang Sedang
+A039;L;ASD-3;"9;3";Percakapan;Mau ibu;P+O;2;Tidak;mau ibu;['mau', 'ibu'];Berkembang Sedang
+A040;P;ASD-3;"8;10";Bermain;Bola bola bola;Repetisi;3;Ya;bola bola bola;['bola', 'bola', 'bola'];Belum Berkembang
+A040;P;ASD-3;"8;10";Bermain;Mobil mobil;Repetisi;2;Ya;mobil mobil;['mobil', 'mobil'];Belum Berkembang
+A041;L;ASD-1;"6;8";Percakapan;Aku main sepeda sore ;S+P+O+Ket;4;Tidak;aku main sepeda sore;['aku', 'main', 'sepeda', 'sore'];Sudah Mahir
+A041;L;ASD-1;"6;8";Bercerita;Aku lihat tadi kucing;S+P+Ket+O;4;Tidak;aku lihat tadi kucing;['aku', 'lihat', 'tadi', 'kucing'];Sudah Mahir
+A042;P;ASD-1;"7;4";Deskripsi Gambar;Anak lagi siram bunga;S+P+O;4;Tidak;anak lagi siram bunga;['anak', 'lagi', 'siram', 'bunga'];Sudah Mahir
+A042;P;ASD-1;"7;4";Percakapan;Saya senang  membaca buku;S+P+O;4;Tidak;saya senang membaca buku;['saya', 'senang', 'membaca', 'buku'];Sudah Mahir
+A043;L;ASD-1;"8;1";Bermain;Pesawat balap sangat cepat;S+P+Pel;4;Tidak;pesawat balap sangat cepat;['pesawat', 'balap', 'sangat', 'cepat'];Sudah Mahir
+A043;L;ASD-1;"8;1";Instruksi;Aku sudah masuk mainan kotak;S+P+O+Ket;5;Tidak;aku sudah masuk mainan kotak;['aku', 'sudah', 'masuk', 'mainan', 'kotak'];Sudah Mahir
+A044;P;ASD-1;"7;10";Bercerita;Kemarin ibu ajak aku ke pasar;Ket+S+P+O+Ket;6;Tidak;kemarin ibu ajak aku ke pasar;['kemarin', 'ibu', 'ajak', 'aku', 'ke', 'pasar'];Sudah Mahir
+A044;P;ASD-1;"7;10";Percakapan;Aku ingin membeli mi;S+P+O;4;Tidak;aku ingin membeli mi;['aku', 'ingin', 'membeli', 'mi'];Sudah Mahir
+A045;L;ASD-1;"8;3";Deskripsi Gambar;Anak  makan bersama adik ;S+P+Ket;4;Tidak;anak makan bersama adik;['anak', 'makan', 'bersama', 'adik'];Sudah Mahir
+A045;L;ASD-1;"8;3";Percakapan;Aku tidak suka kodok;S+P+O;4;Tidak;aku tidak suka kodok;['aku', 'tidak', 'suka', 'kodok'];Sudah Mahir
+A046;P;ASD-1;"7;6";Bermain;Boneka pakai baju baru;S+P+O;4;Tidak;boneka pakai baju baru;['boneka', 'pakai', 'baju', 'baru'];Sudah Mahir
+A046;P;ASD-1;"7;6";Percakapan;Besok aku pergi ke sekolah;Ket+S+P+Ket;5;Tidak;besok aku pergi ke sekolah;['besok', 'aku', 'pergi', 'ke', 'sekolah'];Sudah Mahir
+A047;L;ASD-1;"8;0";Bercerita;Ayah bawaku ke kebun binatang;S+P+O+Ket;5;Tidak;ayah bawaku ke kebun binatang;['ayah', 'bawaku', 'ke', 'kebun', 'binatang'];Sudah Mahir
+A047;L;ASD-1;"8;0";Percakapan;Aku senang gajah besar;S+O;4;Tidak;aku senang gajah besar;['aku', 'senang', 'gajah', 'besar'];Berkembang Sedang
+A048;P;ASD-2;"7;2";Bermain;Mau apel itu;P+O;3;Tidak;mau apel itu;['mau', 'apel', 'itu'];Berkembang Sedang
+A048;P;ASD-2;"7;2";Percakapan;Aku mau duduk;S+P;3;Tidak;aku mau duduk;['aku', 'mau', 'duduk'];Berkembang Sedang
+A049;L;ASD-2;"8;1";Deskripsi Gambar;Anak ini payung;S+O;3;Tidak;anak ini payung;['anak', 'ini', 'payung'];Berkembang Sedang
+A049;L;ASD-2;"8;1";Bermain;Bola masuk rumah;S+P+Ket;3;Tidak;bola masuk rumah;['bola', 'masuk', 'rumah'];Sudah Mahir
+A050;P;ASD-2;"7;9";Percakapan;Tidak suka ;Negasi;2;Tidak;tidak suka;['tidak', 'suka'];Berkembang Sedang
+A050;P;ASD-2;"7;9";Instruksi;Sudah simpan buku;P+O;3;Tidak;sudah simpan buku;['sudah', 'simpan', 'buku'];Berkembang Sedang
+A051;L;ASD-2;"8;4";Bermain;Kuda jalan ;S+P;2;Tidak;kuda jalan;['kuda', 'jalan'];Berkembang Sedang
+A051;L;ASD-2;"8;4";Percakapan;Mau minum air;P+O;3;Tidak;mau minum air;['mau', 'minum', 'air'];Berkembang Sedang
+A052;P;ASD-2;"8;0";Deskripsi Gambar;Kucing makan ikan;S+P+O;3;Tidak;kucing makan ikan;['kucing', 'makan', 'ikan'];Sudah Mahir
+A052;P;ASD-2;"8;0";Percakapan;Mau pulang;P+Ket;3;Tidak;mau pulang;['mau', 'pulang'];Berkembang Sedang
+A053;L;ASD-2;"7;8";Bermain;Tata jatuh (Tata nama teman);S+P;2;Tidak;tata jatuh tata nama teman;['tata', 'jatuh', 'tata', 'nama', 'teman'];Berkembang Sedang
+A053;L;ASD-2;"7;8";Percakapan;Mau lagi main;P+Ket;3;Tidak;mau lagi main;['mau', 'lagi', 'main'];Berkembang Sedang
+A054;P;ASD-2;"8;5";Bercerita;Adik makan roti;S+P+O;3;Tidak;adik makan roti;['adik', 'makan', 'roti'];Sudah Mahir
+A054;P;ASD-2;"8;5";Percakapan;Aku mau susu;S+P+O;3;Tidak;aku mau susu;['aku', 'mau', 'susu'];Sudah Mahir
+A055;L;ASD-2;"7;7";Bermain;Bola besar;Frasa Nomina;2;Tidak;bola besar;['bola', 'besar'];Berkembang Sedang
+A055;L;ASD-2;"7;7";Percakapan;Tidak mau mandi;Negasi+P;3;Tidak;tidak mau mandi;['tidak', 'mau', 'mandi'];Berkembang Sedang
+A056;P;ASD-2;"8;2";Deskripsi Gambar;Adik lari cepat;S+P+Ket;3;Tidak;adik lari cepat;['adik', 'lari', 'cepat'];Sudah Mahir
+A056;P;ASD-2;"8;2";Bermain;Boneka duduk kursi;S+P+Ket;3;Tidak;boneka duduk kursi;['boneka', 'duduk', 'kursi'];Sudah Mahir
+A057;L;ASD-3;"8;1";Bermain;Mobil;Kata Tunggal;1;Tidak;mobil;['mobil'];Belum Berkembang
+A057;L;ASD-3;"8;1";Bermain;Kereta;Kata Tunggal;1;Tidak;kereta;['kereta'];Belum Berkembang
+A058;P;ASD-3;"7;10";Percakapan;Mau makan;P+O;2;Tidak;mau makan;['mau', 'makan'];Berkembang Sedang
+A058;P;ASD-3;"7;10";Percakapan;Mau minum;P+O;2;Tidak;mau minum;['mau', 'minum'];Berkembang Sedang
+A059;L;ASD-3;"9;0";Bermain;Mobil mobil mobil;Repetisi;3;Ya;mobil mobil mobil;['mobil', 'mobil', 'mobil'];Belum Berkembang
+A059;L;ASD-3;"9;0";Bermain;Duduk duduk;Repetisi Verbal;2;Ya;duduk duduk;['duduk', 'duduk'];Belum Berkembang
+A060;P;ASD-3;"8;3";Deskripsi Gambar;Anak duduk;S+P;2;Tidak;anak duduk;['anak', 'duduk'];Berkembang Sedang
+A060;P;ASD-3;"8;3";Deskripsi Gambar;Kucing;Kata Tunggal;1;Tidak;kucing;['kucing'];Belum Berkembang
+A061;L;ASD-3;"8;9";Percakapan;Maaf maaf;Echolalia;2;Ya;maaf maaf;['maaf', 'maaf'];Belum Berkembang
+A061;L;ASD-3;"8;9";Percakapan;Selamat pagi selamat pagi;Echolalia;4;Ya;selamat pagi selamat pagi;['selamat', 'pagi', 'selamat', 'pagi'];Belum Berkembang
+A062;P;ASD-3;"7;8";Bermain;Putar putar;Repetisi Verbal;2;Ya;putar putar;['putar', 'putar'];Belum Berkembang
+A062;P;ASD-3;"7;8";Bermain;Mata mata mata mata;Repetisi Verbal;4;Ya;mata mata mata mata;['mata', 'mata', 'mata', 'mata'];Belum Berkembang
+A063;L;ASD-3;"9;2";Percakapan;Tidak;Negasi;2;Tidak;tidak;['tidak'];Berkembang Sedang
+A063;L;ASD-3;"9;2";Percakapan;Mau;Kata Tunggal;1;Tidak;mau;['mau'];Belum Berkembang
+A064;P;ASD-3;"8;6";Bermain;Bola bola;Repetisi;2;Ya;bola bola;['bola', 'bola'];Belum Berkembang
+A064;P;ASD-3;"8;6";Bermain;Kaki kaki ;Repetisi;2;Ya;kaki kaki;['kaki', 'kaki'];Belum Berkembang
+A065;L;ASD-3;"8;11";Percakapan;Buka ini (pintu);P+O;2;Tidak;buka ini pintu;['buka', 'ini', 'pintu'];Berkembang Sedang
+A065;L;ASD-3;"8;11";Percakapan;Kucing ada;P+O;2;Tidak;kucing ada;['kucing', 'ada'];Berkembang Sedang
