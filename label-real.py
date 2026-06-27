@@ -62,10 +62,8 @@ def tentukan_intensi(row):
 # ==========================================
 try:
     print("Membaca file data_real_lengkap.csv...")
-    # Pastikan file CSV sebelumnya sudah berada di folder yang benar
     df = pd.read_csv('dataset/data_real_lengkap.csv', sep=';', encoding='utf-8')
 
-    # Memastikan kolom yang akan dibaca tersedia
     if 'Struktur Sintaksis' not in df.columns or 'Ujaran Anak' not in df.columns:
         print("Error: Kolom 'Struktur Sintaksis' atau 'Ujaran Anak' tidak ditemukan.")
     else:
@@ -75,7 +73,6 @@ try:
         print("Tahap 2: Mengekstrak fitur Intensi Komunikasi...")
         df['Intensi Komunikasi'] = df.apply(tentukan_intensi, axis=1)
 
-        # Menyimpan ke file CSV final untuk Machine Learning
         nama_file_final = 'dataset/data_final_siap_ml.csv'
         df.to_csv(nama_file_final, index=False, sep=';')
         
