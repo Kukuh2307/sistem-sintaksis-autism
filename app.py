@@ -43,7 +43,8 @@ def auto_parse_sintaksis(ujaran_bersih, echolalia):
     # Kamus Leksikon Mini (Berdasarkan data klinis anak)
     kata_negasi = ['tidak', 'bukan', 'jangan', 'belum']
     kata_ket = ['kemarin', 'besok', 'tadi', 'sekarang', 'sore', 'pagi', 'sangat', 'cepat', 'di', 'ke', 'dari', 'sini', 'sana', 'epat']
-    kata_predikat = ['mau', 'ingin', 'minta', 'makan', 'minum', 'lari', 'main', 'duduk', 'lihat', 'putar', 'tidur', 'mandi', 'siram', 'baca', 'pergi']
+    kata_modal = ['mau', 'ingin']
+    kata_predikat = ['minta', 'makan', 'minum', 'lari', 'main', 'duduk', 'lihat', 'putar', 'tidur', 'mandi', 'siram', 'baca', 'pergi']
     kata_nomina = ['aku', 'saya', 'kamu', 'dia', 'mama', 'papa', 'anak', 'mobil', 'bunga', 'sepeda', 'kucing', 'susu', 'air', 'buku', 'kebun', 'binatang', 'ini', 'itu']
 
     pola_kasar = []
@@ -64,9 +65,15 @@ def auto_parse_sintaksis(ujaran_bersih, echolalia):
             pola_kasar.append("Ket")
             if kata in ['di', 'ke', 'dari']:  # Memicu frasa keterangan bersambung
                 is_ket_phrase = True
-        elif kata in kata_predikat:
+        elif kata in kata_modal:
             pola_kasar.append("P")
             has_predikat = True
+        elif kata in kata_predikat:
+            if has_predikat:
+                pola_kasar.append("O")
+            else:
+                pola_kasar.append("P")
+                has_predikat = True
         elif kata in kata_nomina:
             # Logika Cerdas: Nomina sebelum Predikat = Subjek. Setelah Predikat = Objek.
             if not has_predikat:
