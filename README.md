@@ -229,21 +229,28 @@ Jika MLU <= 2 → rekomendasi ekspansi kalimat (+1 kata dari produksi anak).
 
 **Sumber**: 65 anak autisme (A001–A065), 2 ujaran per anak = **132 sampel**
 
-| Kolom | Deskripsi |
-|---|---|
-| `ID Anak` | Kode unik (A001–A065) |
-| `JK` | Jenis kelamin (L/P) |
-| `ASD` | Tingkat autisme (ASD-1/2/3) |
-| `Usia` | Usia dalam format tahun;bulan |
-| `Konteks` | Bermain, Percakapan, Bercerita, Deskripsi Gambar, Instruksi |
-| `Ujaran Anak` | Teks asli ujaran anak |
-| `Struktur Sintaksis` | Pola SPOK label manual |
-| `MLU` | Mean Length of Utterance (jumlah kata) |
-| `Echolalia` | Ya/Tidak |
+Dataset final (`data_final_siap_ml.csv`) memiliki **14 kolom** sebagai berikut:
+
+| # | Kolom | Deskripsi | Asal |
+|---|---|---|---|
+| 1 | `ID Anak` | Kode unik (A001–A065) | Data mentah |
+| 2 | `JK` | Jenis kelamin (L/P) | Data mentah |
+| 3 | `ASD` | Tingkat autisme (ASD-1/2/3) | Data mentah |
+| 4 | `Usia` | Usia dalam format tahun;bulan | Data mentah |
+| 5 | `Konteks` | Bermain, Percakapan, Bercerita, Deskripsi Gambar, Instruksi | Data mentah |
+| 6 | `Ujaran Anak` | Teks asli ujaran anak | Data mentah |
+| 7 | `Struktur Sintaksis` | Pola SPOK label manual | Data mentah |
+| 8 | `MLU` | Mean Length of Utterance (jumlah kata) | Data mentah |
+| 9 | `Echolalia` | Ya/Tidak | Data mentah |
+| 10 | `Ujaran Bersih` | Hasil preprocessing (case folding + cleaning) | `pre_processing.py` |
+| 11 | `Token` | Hasil tokenisasi dalam bentuk list | `pre_processing.py` |
+| 12 | `Kategori Pemahaman` | Belum Berkembang / Berkembang Sedang / Sudah Mahir | `pre_processing.py` |
+| 13 | `Kompleksitas Kalimat` | K1 (Kata Tunggal) / K2 (Frasa) / K3 (Kalimat Sederhana) / K4 (Kalimat Majemuk) | `label-real.py` |
+| 14 | `Intensi Komunikasi` | Protesting / Requesting / Answering / Commenting | `label-real.py` |
 
 ### Pipeline Pelabelan Dataset
 
-1. **`pre_processing.py`**: Preprocessing → `Ujaran Bersih` + `Token` + Aturan `tentukan_kategori()` → `Kategori Pemahaman`
+1. **`pre_processing.py`**: Preprocessing (`Ujaran Anak` → `Ujaran Bersih` + `Token`) + Aturan `tentukan_kategori()` → `Kategori Pemahaman`
 2. **`label-real.py`**: Ekstraksi fitur `Kompleksitas Kalimat` (K1–K4) + `Intensi Komunikasi`
 
 ---
@@ -252,22 +259,18 @@ Jika MLU <= 2 → rekomendasi ekspansi kalimat (+1 kata dari produksi anak).
 
 ```
 ├── app.py                          # Aplikasi Streamlit utama
-├── pre_processing.py               # Preprocessing & pelabelan dataset (tahap 1)
-├── label-real.py                   # Ekstraksi fitur dataset (tahap 2)
+├── pre_processing.py               # Preprocessing & pelabelan dataset
+├── label-real.py                   # Ekstraksi fitur dataset
 ├── model2.ipynb                    # Notebook training model Random Forest
-├── model_sintaksis_real.pkl        # Model ML terlatih
-├── version.py                      # Versi pustaka
+├── model_sintaksis_real.pkl        # Model ML terlatih (Random Forest)
+├── version.py                      # Cek versi pustaka
 ├── requirements.txt                # Dependensi
+├── README.md                       # Dokumentasi sistem
 ├── dataset/
-│   ├── data_real.csv               # Dataset mentah (132 sampel)
-│   ├── data_real_lengkap.csv       # Setelah preprocessing + kategori
-│   └── data_final_siap_ml.csv      # Setelah ekstraksi fitur (siap ML)
-├── app_old/
-│   ├── app1.py                     # Prototype awal (rule-based sederhana)
-│   ├── label.py                    # Labeling versi lama
-│   ├── model_sintaksis.pkl         # Model versi lama
-│   └── model1.ipynb                # Notebook versi lama
-└── README.md
+│   ├── data_real.csv               # Dataset mentah (9 kolom, 132 sampel)
+│   ├── data_real_lengkap.csv       # Setelah preprocessing + Kategori Pemahaman
+│   └── data_final_siap_ml.csv      # Setelah ekstraksi fitur (14 kolom, siap ML)
+└── __pycache__/                    # Cache bytecode Python
 ```
 
 ---
