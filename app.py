@@ -97,9 +97,9 @@ def auto_parse_sintaksis(ujaran_bersih, echolalia):
 # ==========================================
 def tentukan_kompleksitas(struktur_sintaksis):
     struktur = str(struktur_sintaksis).strip().lower()
-    if 'tunggal' in struktur or 'repetisi' in struktur or 'echolalia' in struktur or 'negasi' == struktur:
+    if '+' not in struktur or struktur in ['echolalia', 'repetisi', 'negasi', 'tidak teridentifikasi']:
         return 'Kata Tunggal (K1)'
-    elif 'frasa' in struktur or struktur in ['p+o', 'p+ket', 'negasi+p', 's+p']:
+    elif struktur.count('+') == 1:
         return 'Frasa (K2)'
     elif struktur.count('+') >= 3:
         return 'Kalimat Majemuk (K4)'
@@ -136,29 +136,203 @@ def hitung_ikla(mlu, kompleksitas, intensi, echolalia, konteks, token_len):
         level_asd = "Autisme Sedang (DSM-5 Level 2)"
     else:
         level_asd = "Autisme Ringan (DSM-5 Level 1)"
-    return round(total_skor, 2), level_asd
+    return round(total_skor, 2), level_asd, {
+        "Sintaksis": (skor_sintaksis, 27),
+        "Leksikal": (skor_leksikal, 18),
+        "Pragmatik": (skor_pragmatik, 22.5),
+        "Echolalia": (skor_echo, 13.5),
+        "Inisiasi": (skor_inisiasi, 9.0),
+    }
 
-# KAMUS REKOMENDASI TERAPIS
+# KAMUS REKOMENDASI TERAPIS (STRUKTUR LENGKAP)
 KAMUS_REKOMENDASI = {
     'Belum Berkembang': {
-        'Protesting': "Gunakan PECS (Picture Exchange Communication System) untuk membantu ekspresi penolakan. Latih kepatuhan 1 kata.",
-        'Requesting': "Teknik Manding (Permintaan). Stimulasi anak memproduksi vokal dasar sebelum memberikan objek.",
-        'Commenting': "Tingkatkan joint attention menggunakan mainan sensorik. Latih imitasi bunyi verbal.",
-        'Answering': "Berikan stimulasi imitasi vokal 'Ya/Tidak' disertai gestur."
+        'Protesting': {
+            'target': 'Ekspresi Penolakan Fungsional',
+            'metode': 'PECS (Picture Exchange Communication System) — kartu bergambar "tidak/saya tidak mau"',
+            'contoh': 'Saat anak menolak, tunjukkan kartu "tidak" sambil geleng kepala. Ulangi tiap kali anak menunjukkan resistensi.',
+            'frekuensi': '5-7 sesi awal, 10-15 menit/sesi, 3-4x seminggu',
+            'indikator': 'Anak mampu menunjuk/memberi kartu "tidak" secara mandiri saat menolak'
+        },
+        'Requesting': {
+            'target': 'Produksi Vokal untuk Meminta',
+            'metode': 'Teknik Manding — tangkap setiap vokal yang diproduksi anak dan hubungkan dengan objek yang diinginkan',
+            'contoh': 'Anak melihat biskuit → tunggu vokal (/"ah"/) → beri biskuit sambil ucapkan "mau"',
+            'frekuensi': 'Setiap sesi, 10-15 peluang per sesi',
+            'indikator': 'Anak memproduksi minimal 2 vokal berbeda secara konsisten untuk meminta'
+        },
+        'Commenting': {
+            'target': 'Joint Attention & Imitasi Verbal',
+            'metode': 'Mainan sensorik (gelembung, lampu, tekstur) untuk menarik perhatian bersama',
+            'contoh': 'Tiup gelembung, tiru suara "bu..bu..bu" saat gelembung pecah. Tunggu anak meniru.',
+            'frekuensi': '2-3 sesi/hari, 5-10 menit',
+            'indikator': 'Anak menatap objek yang sama dengan terapis minimal 3 detik'
+        },
+        'Answering': {
+            'target': 'Respon Verbal terhadap Pertanyaan Ya/Tidak',
+            'metode': 'Imitasi vokal "Ya" dan "Tidak" disertai gestur angguk/geleng',
+            'contoh': 'Tanya "Mau?" sambil angguk → stimulus vokal "ya". Beri objek saat anak meniru.',
+            'frekuensi': '5-8x per sesi, 3-4 sesi/minggu',
+            'indikator': 'Anak merespon dengan vokal "ya" atau "tidak" secara kontekstual 60% dari kesempatan'
+        }
     },
     'Berkembang Sedang': {
-        'Protesting': "Ajarkan frasa penolakan 'tidak mau'. Berikan jadwal visual untuk transisi.",
-        'Requesting': "Latih perluasan kalimat dari kata tunggal menjadi frasa 2 kata.",
-        'Commenting': "Pancing anak melengkapi bagian kalimat yang hilang pada gambar.",
-        'Answering': "Latih menjawab pertanyaan 'Apa' dan 'Siapa' menggunakan visual."
+        'Protesting': {
+            'target': 'Ekspresi Penolakan Verbal 2 Kata',
+            'metode': 'Frasa penolakan "tidak mau" + jadwal visual transisi aktivitas',
+            'contoh': 'Tunjukkan jadwal: "sekarang bermain, nanti mandi". Saat anak protes, bantu ucapkan "tidak mau" sambil tunjuk jadwal.',
+            'frekuensi': 'Setiap transisi, 3-4x sehari',
+            'indikator': 'Anak mengucapkan "tidak mau" tanpa prompting 50% dari kesempatan'
+        },
+        'Requesting': {
+            'target': 'Perluasan Kalimat Permintaan',
+            'metode': 'Ekspansi dari 1 kata → frasa 2 kata menggunakan model + delay',
+            'contoh': 'Anak: "mau" → Terapis: "mau apa?" + tunjuk gambar. Target: "mau susu", "mau main"',
+            'frekuensi': '15-20 peluang per sesi',
+            'indikator': 'Anak memproduksi minimal 5 frasa 2 kata berbeda untuk meminta'
+        },
+        'Commenting': {
+            'target': 'Melengkapi Kalimat & Labeling',
+            'metode': 'Teknik Cloze — bacakan kalimat dengan bagian hilang pada buku bergambar',
+            'contoh': '"Ini namanya... (kucing)". Tunggu 5 detik. Jika tidakrespon, beri pilihan: "kucing atau mobil?"',
+            'frekuensi': '3-5 halaman per sesi, 2 sesi/hari',
+            'indikator': 'Anak melengkapi 60% kalimat cloze dengan benar'
+        },
+        'Answering': {
+            'target': 'Menjawab Pertanyaan Apa & Siapa',
+            'metode': 'Visual support — kartu bergambar + prompt bertingkat (verbal → gestur → mandiri)',
+            'contoh': 'Tunjuk gambar anak sedang makan. Tanya "Apa yang dilakukan?" Beri pilihan: "makan / tidur"',
+            'frekuensi': '10-12 pertanyaan per sesi',
+            'indikator': 'Menjawab 70% pertanyaan "Apa" dan "Siapa" dengan benar'
+        }
     },
     'Sudah Mahir': {
-        'Protesting': "Latih ekspresi alasan penolakan secara logis (karena/sebab).",
-        'Requesting': "Tingkatkan kemampuan meminta ke struktur lengkap dengan sopan santun.",
-        'Commenting': "Terapkan 'Story Retelling' untuk melatih klausa bertingkat.",
-        'Answering': "Stimulasi pertanyaan tingkat tinggi 'Mengapa' dan 'Bagaimana'."
+        'Protesting': {
+            'target': 'Ekspresi Alasan Penolakan Logis',
+            'metode': 'Stimulasi kalimat sebab-akibat menggunakan karena/sebab',
+            'contoh': 'Anak: "tidak mau" → Terapis: "tidak mau karena...?" Bantu: "karena sudah capek"',
+            'frekuensi': '3-4 kesempatan per sesi',
+            'indikator': 'Anak memberikan alasan penolakan spontan dengan "karena" 70%'
+        },
+        'Requesting': {
+            'target': 'Permintaan Struktur Lengkap + Santun',
+            'metode': 'Pemodelan kalimat lengkap: "Saya mau [objek] tolong" + role play',
+            'contoh': 'Role play jual-beli. Anak: "saya mau" → Terapis modelkan: "saya mau beli buku, tolong"',
+            'frekuensi': '5-10 sesi bermain peran',
+            'indikator': 'Anak menggunakan kalimat >4 kata dengan unsur kesantunan'
+        },
+        'Commenting': {
+            'target': 'Narasi & Klausa Bertingkat',
+            'metode': 'Story Retelling — anak menceritakan kembali cerita yang didengar dengan urutan logis',
+            'contoh': 'Baca cerita 3-4 kalimat. Minta anak ceritakan ulang. Prompt: "pertama... lalu... akhirnya..."',
+            'frekuensi': '1-2 cerita per sesi',
+            'indikator': 'Anak menceritakan ulang dengan 3 klausa berurutan'
+        },
+        'Answering': {
+            'target': 'Pertanyaan Kausal & Hipotetis',
+            'metode': 'Stimulasi "Mengapa" dan "Bagaimana" — hubungkan dengan pengalaman konkret anak',
+            'contoh': '"Mengapa kita pakai jaket?" "Bagaimana cara membuat susu?" Biarkan anak menjelaskan proses.',
+            'frekuensi': '4-5 pertanyaan terbuka per sesi',
+            'indikator': 'Anak menjawab "mengapa" dan "bagaimana" dengan logika yang relevan'
+        }
     }
 }
+
+# REKOMENDASI TAMBAHAN BERDASARKAN SKOR KOMPONEN
+REKOMENDASI_KOMPONEN = {
+    'Sintaksis': {
+        'kondisi': lambda v, maks: v / maks < 0.5,
+        'rekomendasi': lambda v, maks: (
+            f"**{v}/{maks}** — Struktur kalimat sangat terbatas. "
+            "Latih perluasan dari 1 kata → 2 kata: beri model S-P (\"mama tidur\"), "
+            "kemudian S-P-O (\"aku mau susu\"). Targetkan +1 kata per 2 minggu."
+        ),
+    },
+    'Leksikal': {
+        'kondisi': lambda v, maks: v / maks < 0.5,
+        'rekomendasi': lambda v, maks: (
+            f"**{v}/{maks}** — Variasi kosakata rendah. "
+            "Ekspos 3-5 kosakata baru per sesi lewat buku bergambar tematik. "
+            "Gunakan teknik \"model & pause\": ucapkan kata baru, tunggu anak meniru."
+        ),
+    },
+    'Pragmatik': {
+        'kondisi': lambda v, maks: v / maks < 0.5,
+        'rekomendasi': lambda v, maks: (
+            f"**{v}/{maks}** — Fungsi komunikasi pragmatik terbatas. "
+            "Fokus pada turn-taking: bergantian mainan 3-5 giliran. "
+            "Latih kontak mata sebelum memberikan objek yang diminta."
+        ),
+    },
+    'Echolalia': {
+        'kondisi': lambda v, maks: v / maks < 0.5,
+        'rekomendasi': lambda v, maks: (
+            f"**{v}/{maks}** — Echolalia/repetisi signifikan. "
+            "Terapkan intervensi potong-rantai: sela pola repetisi dengan prompt baru. "
+            "Ajarkan respon fungsional \"Ya\" / \"Tidak\" sebagai alternatif echolalia."
+        ),
+    },
+    'Inisiasi': {
+        'kondisi': lambda v, maks: v / maks < 0.5,
+        'rekomendasi': lambda v, maks: (
+            f"**{v}/{maks}** — Inisiasi komunikasi rendah. "
+            "Ciptakan situasi yang membutuhkan anak memulai komunikasi "
+            "(letakkan mainan favorit di tempat tinggi, tunggu anak meminta tolong). "
+            "Berikan reinforcement segera saat anak berinisiatif."
+        ),
+    },
+}
+
+def gen_rekomendasi_tambahan(rincian_skor, mlu, echolalia):
+    hasil = []
+    for komponen, (skor, maks) in rincian_skor.items():
+        entry = REKOMENDASI_KOMPONEN.get(komponen)
+        if entry and entry['kondisi'](skor, maks):
+            hasil.append((komponen, skor, maks, entry['rekomendasi'](skor, maks)))
+
+    if mlu <= 2:
+        hasil.append(("MLU", None, None,
+            f"**MLU {mlu} kata** — Rerata panjang ujaran rendah. "
+            "Target ekspansi: modelkan kalimat +1 kata dari yang diproduksi anak. "
+            "Misal: anak \"mau\" → model \"aku mau\"."))
+
+    if echolalia == "Ya":
+        ada_echo = any(k == "Echolalia" for k, _, _, _ in hasil)
+        if not ada_echo:
+            hasil.append(("Echolalia", None, None,
+                "**Echolalia terdeteksi** — Terapkan teknik potong-rantai: "
+                "saat anak mengulang kata, beri prompt baru yang mengubah arah pembicaraan."))
+
+    return hasil
+
+# ==========================================
+# 5. SANITY CHECK (VALIDASI OUTPUT)
+# ==========================================
+def sanity_check_prediksi(prediksi, mlu, skor_ikla):
+    korreksi = prediksi
+    alasan = None
+
+    batas_mlu = {
+        "Belum Berkembang": (0, 1),
+        "Berkembang Sedang": (2, 3),
+        "Sudah Mahir": (4, float("inf")),
+    }
+
+    for level, (min_kata, max_kata) in batas_mlu.items():
+        if min_kata <= mlu <= max_kata:
+            if prediksi != level:
+                korreksi = level
+                alasan = f"MLU ({mlu} kata) terlalu rendah untuk '{prediksi}', disesuaikan ke '{level}'"
+            break
+
+    if korreksi == "Sudah Mahir" and skor_ikla <= 60:
+        korreksi = "Berkembang Sedang"
+        alasan = f"Skor IKLA ({skor_ikla}) tidak mendukung 'Sudah Mahir', disesuaikan ke 'Berkembang Sedang'"
+    elif korreksi == "Berkembang Sedang" and skor_ikla <= 30:
+        korreksi = "Belum Berkembang"
+        alasan = f"Skor IKLA ({skor_ikla}) tidak mendukung 'Berkembang Sedang', disesuaikan ke 'Belum Berkembang'"
+
+    return korreksi, alasan
 
 # ==========================================
 # APP UI & FRONTEND
@@ -223,8 +397,13 @@ with col_output:
                 prediksi_pemahaman = "Belum Berkembang" if mlu_hitung <= 1 else "Sudah Mahir"
                 
             # 3. Kalkulator IKLA & Rekomendasi
-            skor_ikla, label_diagnosis = hitung_ikla(mlu_hitung, kompleksitas_kalimat, intensi_komunikasi, echolalia, konteks, mlu_hitung)
-            rekomendasi_final = KAMUS_REKOMENDASI.get(prediksi_pemahaman, {}).get(intensi_komunikasi, "Lanjutkan stimulasi wicara dasar.")
+            skor_ikla, label_diagnosis, rincian_skor = hitung_ikla(mlu_hitung, kompleksitas_kalimat, intensi_komunikasi, echolalia, konteks, mlu_hitung)
+
+            # Sanity check: filter validasi antara prediksi MLU & IKLA
+            prediksi_pemahaman, warning_sanity = sanity_check_prediksi(prediksi_pemahaman, mlu_hitung, skor_ikla)
+
+            rekomendasi_utama = KAMUS_REKOMENDASI.get(prediksi_pemahaman, {}).get(intensi_komunikasi, None)
+            rekomendasi_tambahan = gen_rekomendasi_tambahan(rincian_skor, mlu_hitung, echolalia)
             
             # Menampilkan Output
             # st.success("Analisis Selesai!")
@@ -239,19 +418,84 @@ with col_output:
             st.subheader("2. Prediksi Kognitif & Pragmatik")
             c1, c2 = st.columns(2)
             c1.info(f"**Pemahaman:** {prediksi_pemahaman}")
-            c2.warning(f"**Intensi:** {intensi_komunikasi}")
+            c2.info(f"**Intensi:** {intensi_komunikasi}")
+            if warning_sanity:
+                st.caption(f"⚙️ Sanity check: {warning_sanity}")
             
             # 3. Output Klinis IKLA
             with st.expander("Skor Indeks Keparahan Linguistik (IKLA DSM-5)", expanded=True):
-                st.metric(label="Total Skor IKLA", value=f"{skor_ikla} / 90")
+                pct = skor_ikla / 90 * 100
+                if pct <= 33:
+                    bar_color = "#e53e3e"
+                elif pct <= 66:
+                    bar_color = "#D69E2E"
+                else:
+                    bar_color = "#38a169"
+
+                col_metrik, col_gauge = st.columns([1, 1.5])
+                with col_metrik:
+                    st.metric(label="Total Skor IKLA", value=f"{skor_ikla} / 90")
+                with col_gauge:
+                    st.markdown(f"""
+                    <div style="margin-top: 0.5rem;">
+                        <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:white;margin-bottom:0.25rem;">
+                            <span>0</span>
+                            <span style="font-weight:600;">{skor_ikla} / 90 ({pct:.0f}%)</span>
+                            <span>90</span>
+                        </div>
+                        <div style="height:14px;background:#edf2f7;border-radius:10px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,0.1);">
+                            <div style="height:100%;width:{pct}%;background:linear-gradient(90deg,{bar_color},#2C7A7B);border-radius:10px;transition:width 0.6s ease;"></div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
                 st.markdown(f"**Indikasi Klinis:** {label_diagnosis}")
 
-            # 4. Rekomendasi
+                df_sub = pd.DataFrame([
+                    {"Komponen": k, "Skor": v[0], "Maks": v[1]}
+                    for k, v in rincian_skor.items()
+                ]).set_index("Komponen")
+                st.subheader("Rincian Skor per Komponen")
+                st.bar_chart(df_sub, y="Skor", stack=False, height=250)
+
+            # 3. Rekomendasi Sistem (Revisi Layout dengan Styling Konsisten)
             st.subheader("3. Rekomendasi Sistem")
-            st.write(f"{rekomendasi_final}")
-            if echolalia == "Ya":
-                st.error("⚠️ Catatan: Terapkan intervensi potong-rantai untuk mengatasi repetisi Echolalia.")
+
+            if rekomendasi_utama:
+                r = rekomendasi_utama
                 
+                # 1. Menyiapkan Data dengan struktur yang clean
+                data_rekomendasi = {
+                    "Kategori": ["🎯 Target", "📌 Metode", "💬 Contoh", "📊 Frekuensi", "✅ Indikator"],
+                    "Detail": [r['target'], r['metode'], r['contoh'], r['frekuensi'], r['indikator']]
+                }
+                df_rekomendasi = pd.DataFrame(data_rekomendasi)
+                
+                # 2. Menampilkan Tabel dengan style yang lebih profesional
+                # Menggunakan st.dataframe dengan hide_index agar terlihat seperti panel data
+                st.dataframe(
+                    df_rekomendasi,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Kategori": st.column_config.TextColumn("Kategori", width="small"),
+                        "Detail": st.column_config.TextColumn("Detail", width="large")
+                    }
+                )
+                
+                # 3. Rekomendasi Tambahan (menggunakan style peringatan yang konsisten)
+                if rekomendasi_tambahan:
+                    st.markdown("---")
+                    st.markdown("**Catatan Rekomendasi Tambahan:**")
+                    for label, skor, maks, teks in rekomendasi_tambahan:
+                        skor_str = f" ({skor}/{maks})" if skor is not None else ""
+                        with st.expander(f"⚠️ {label}{skor_str}"):
+                            st.write(teks)
+
+        # Penanganan Echolalia (Tetap konsisten dengan style error/warning)
+        if echolalia == "Ya":
+            st.error("⚠️ Catatan Klinis: Terapkan intervensi potong-rantai untuk mengatasi repetisi Echolalia.")
+                            
     elif tombol_analisis and not ujaran_anak:
         st.error("Ujaran anak tidak boleh kosong!")
     else:
