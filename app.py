@@ -128,14 +128,15 @@ def tentukan_intensi(ujaran, konteks):
 # ==========================================
 # 4. TAHAP KALKULATOR MEDIS (IKLA DSM-5)
 # ==========================================
-def hitung_ikla(mlu, kompleksitas, intensi, echolalia, konteks, token_len):
-    skor_sintaksis = 27 if (kompleksitas == 'Kalimat Majemuk (K4)' or (kompleksitas == 'Kalimat Sederhana (K3)' and mlu >= 3)) else (18 if kompleksitas == 'Frasa (K2)' or mlu == 2 else 9)
-    skor_leksikal = 18 if token_len > 3 else (12 if token_len >= 2 else 6)
-    skor_pragmatik = 22.5 if intensi in ['Commenting', 'Answering'] else (15.0 if intensi == 'Requesting' else 10.0)
-    skor_echo = 13.5 if echolalia == 'Tidak' else 3.0
-    skor_inisiasi = 9.0 if konteks in ['Bermain', 'Bercerita'] else (6.0 if konteks == 'Percakapan' else 3.0)
+def hitung_ikla(mlu, kompleksitas, intensi, echolalia, konteks, token_len, tingkat_asd):
+    skor_sintaksis = 24 if (kompleksitas == 'Kalimat Majemuk (K4)' or (kompleksitas == 'Kalimat Sederhana (K3)' and mlu >= 3)) else (16 if kompleksitas == 'Frasa (K2)' or mlu == 2 else 8)
+    skor_leksikal = 16 if token_len > 3 else (10 if token_len >= 2 else 5)
+    skor_pragmatik = 20 if intensi in ['Commenting', 'Answering'] else (13 if intensi == 'Requesting' else 9)
+    skor_echo = 12 if echolalia == 'Tidak' else 3
+    skor_inisiasi = 8 if konteks in ['Bermain', 'Bercerita'] else (5 if konteks == 'Percakapan' else 3)
+    skor_asd = 10 if tingkat_asd == 'ASD-1' else (6 if tingkat_asd == 'ASD-2' else 2)
         
-    total_skor = skor_sintaksis + skor_leksikal + skor_pragmatik + skor_echo + skor_inisiasi
+    total_skor = skor_sintaksis + skor_leksikal + skor_pragmatik + skor_echo + skor_inisiasi + skor_asd
     
     if total_skor <= 30:
         level_asd = "Autisme Berat (DSM-5 Level 3)"
@@ -144,11 +145,12 @@ def hitung_ikla(mlu, kompleksitas, intensi, echolalia, konteks, token_len):
     else:
         level_asd = "Autisme Ringan (DSM-5 Level 1)"
     return round(total_skor, 2), level_asd, {
-        "Sintaksis": (skor_sintaksis, 27),
-        "Leksikal": (skor_leksikal, 18),
-        "Pragmatik": (skor_pragmatik, 22.5),
-        "Echolalia": (skor_echo, 13.5),
-        "Inisiasi": (skor_inisiasi, 9.0),
+        "Sintaksis": (skor_sintaksis, 24),
+        "Leksikal": (skor_leksikal, 16),
+        "Pragmatik": (skor_pragmatik, 20),
+        "Echolalia": (skor_echo, 12),
+        "Inisiasi": (skor_inisiasi, 8),
+        "ASD Level": (skor_asd, 10),
     }
 
 # KAMUS REKOMENDASI TERAPIS (STRUKTUR LENGKAP)
@@ -288,6 +290,15 @@ REKOMENDASI_KOMPONEN = {
             "Berikan reinforcement segera saat anak berinisiatif."
         ),
     },
+    'ASD Level': {
+        'kondisi': lambda v, maks: v / maks < 0.5,
+        'rekomendasi': lambda v, maks: (
+            f"**{v}/{maks}** — Baseline ASD rendah (ASD-3). "
+            "Intervensi perlu disesuaikan dengan tingkat keparahan: "
+            "fokus pada komunikasi dasar (PECS/isyarat) dan pengurangan "
+            "perilaku repetitif sebelum menargetkan ekspansi linguistik."
+        ),
+    },
 }
 
 def gen_rekomendasi_tambahan(rincian_skor, mlu, echolalia):
@@ -404,7 +415,7 @@ with col_output:
                 prediksi_pemahaman = "Belum Berkembang" if mlu_hitung <= 1 else "Sudah Mahir"
                 
             # 3. Kalkulator IKLA & Rekomendasi
-            skor_ikla, label_diagnosis, rincian_skor = hitung_ikla(mlu_hitung, kompleksitas_kalimat, intensi_komunikasi, echolalia, konteks, mlu_hitung)
+            skor_ikla, label_diagnosis, rincian_skor = hitung_ikla(mlu_hitung, kompleksitas_kalimat, intensi_komunikasi, echolalia, konteks, mlu_hitung, tingkat_asd_input)
 
             # Sanity check: filter validasi antara prediksi MLU & IKLA
             prediksi_pemahaman, warning_sanity = sanity_check_prediksi(prediksi_pemahaman, mlu_hitung, skor_ikla)

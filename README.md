@@ -60,9 +60,10 @@ Input Ujaran Anak
               ▼
 ┌─────────────────────────────┐
 │ Tahap 5: Kalkulator IKLA    │
-│  - 5 komponen (Sintaksis,   │
+│  - 6 komponen (Sintaksis,   │
 │    Leksikal, Pragmatik,     │
-│    Echolalia, Inisiasi)     │
+│    Echolalia, Inisiasi,     │
+│    ASD Level)               │
 │  - Skor total maks: 90      │
 │  - Output: Level DSM-5      │
 │    (Ringan/Sedang/Berat)    │
@@ -106,7 +107,8 @@ Input Ujaran Anak
 |---|---|
 | **Negasi** | `tidak`, `bukan`, `jangan`, `belum` |
 | **Keterangan (Ket)** | `kemarin`, `besok`, `tadi`, `sekarang`, `sore`, `pagi`, `sangat`, `cepat`, `di`, `ke`, `dari`, `sini`, `sana`, `epat` |
-| **Predikat (P)** | `mau`, `ingin`, `minta`, `makan`, `minum`, `lari`, `main`, `duduk`, `lihat`, `putar`, `tidur`, `mandi`, `siram`, `baca`, `pergi` |
+| **Modal (P)** | `mau`, `ingin` (kata kerja bantu, selalu jadi P) |
+| **Predikat (P/O)** | `minta`, `makan`, `minum`, `lari`, `main`, `duduk`, `lihat`, `putar`, `tidur`, `mandi`, `siram`, `baca`, `pergi` |
 | **Nomina (S/O)** | `aku`, `saya`, `kamu`, `dia`, `mama`, `papa`, `anak`, `mobil`, `bunga`, `sepeda`, `kucing`, `susu`, `air`, `buku`, `kebun`, `binatang`, `ini`, `itu` |
 
 #### Aturan Parsing
@@ -159,17 +161,18 @@ Input Ujaran Anak
 - MLU <= 1 → `Belum Berkembang`
 - MLU > 1 → `Sudah Mahir`
 
-### Tahap 5: Kalkulator IKLA — DSM-5 (`app.py:124–145`)
+### Tahap 5: Kalkulator IKLA — DSM-5 (`app.py:128–152`)
 
-Skor total maksimal: **90**, terdiri dari 5 komponen:
+Skor total maksimal: **90**, terdiri dari 6 komponen:
 
 | Komponen | Maks | Kriteria Skor |
 |---|---|---|
-| **Sintaksis** | 27 | K4 / (K3 & MLU>=3) = 27; K2 / MLU=2 = 18; lainnya = 9 |
-| **Leksikal** | 18 | Token >3 = 18; Token >=2 = 12; Token =1 = 6 |
-| **Pragmatik** | 22.5 | Commenting/Answering = 22.5; Requesting = 15; Protesting = 10 |
-| **Echolalia** | 13.5 | "Tidak" = 13.5; "Ya" = 3.0 |
-| **Inisiasi** | 9.0 | Bermain/Bercerita = 9; Percakapan = 6; Deskripsi/Instruksi = 3 |
+| **Sintaksis** | 24 | K4 / (K3 & MLU>=3) = 24; K2 / MLU=2 = 16; lainnya = 8 |
+| **Leksikal** | 16 | Token >3 = 16; Token >=2 = 10; Token =1 = 5 |
+| **Pragmatik** | 20 | Commenting/Answering = 20; Requesting = 13; Protesting = 9 |
+| **Echolalia** | 12 | "Tidak" = 12; "Ya" = 3 |
+| **Inisiasi** | 8 | Bermain/Bercerita = 8; Percakapan = 5; Deskripsi/Instruksi = 3 |
+| **ASD Level** | 10 | ASD-1 = 10; ASD-2 = 6; ASD-3 = 2 |
 
 #### Output Diagnosis DSM-5
 
@@ -196,7 +199,7 @@ Jika prediksi ML tidak sesuai rentang MLU → koreksi paksa ke level yang sesuai
 - "Sudah Mahir" tapi IKLA <= 60 → turunkan ke "Berkembang Sedang"
 - "Berkembang Sedang" tapi IKLA <= 30 → turunkan ke "Belum Berkembang"
 
-### Tahap 7: Rekomendasi Terapis (`app.py:148–306`)
+### Tahap 7: Rekomendasi Terapis (`app.py:154–320`)
 
 #### Matriks Rekomendasi (3 level × 4 intensi = 12 skenario)
 
@@ -216,6 +219,7 @@ Jika skor komponen < 50% dari maksimal, sistem menampilkan catatan per komponen:
 - **Pragmatik**: Fokus turn-taking & kontak mata
 - **Echolalia**: Intervensi potong-rantai
 - **Inisiasi**: Ciptakan situasi butuh inisiatif
+- **ASD Level**: Sesuaikan target intervensi dengan tingkat keparahan — fokus pada komunikasi dasar (PECS/isyarat) untuk ASD-3
 
 Jika MLU <= 2 → rekomendasi ekspansi kalimat (+1 kata dari produksi anak).
 
