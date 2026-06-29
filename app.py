@@ -3,13 +3,14 @@ import pandas as pd
 import re
 import joblib
 import os
+from annotated_text import annotated_text
 
 # ==========================================
 # CONFIGURATION & PAGE SETUP
 # ==========================================
 st.set_page_config(
     page_title="Autism Syntax Assistant (ASA)",
-    page_icon="�",
+    page_icon=":material/psychology:",
     layout="wide"
 )
 
@@ -36,9 +37,9 @@ def auto_parse_sintaksis(ujaran_bersih, echolalia):
     # Bypass khusus untuk gejala klinis Echolalia/Repetisi
     token = ujaran_bersih.split()
     if echolalia == "Ya": 
-        return "Echolalia"
+        return "Echolalia", []
     if len(token) >= 2 and len(set(token)) == 1:
-        return "Repetisi"
+        return "Repetisi", []
 
     # Kamus Leksikon Mini (Berdasarkan data klinis anak)
     kata_negasi = ['tidak', 'bukan', 'jangan', 'belum']
@@ -97,7 +98,7 @@ def auto_parse_sintaksis(ujaran_bersih, echolalia):
             pola_final.append(p)
 
     # Mengembalikan hasil dengan pemisah "+"
-    return "+".join(pola_final) if pola_final else "Tidak Teridentifikasi"
+    return ("+".join(pola_final) if pola_final else "Tidak Teridentifikasi"), pola_kasar
 
 # ==========================================
 # 3. TAHAP EKSTRAKSI FITUR (KOMPLEKSITAS & INTENSI)
@@ -356,8 +357,7 @@ def sanity_check_prediksi(prediksi, mlu, skor_ikla):
 # APP UI & FRONTEND
 # ==========================================
 st.title("Autism Syntax Assistant (ASA)")
-st.subheader("Sistem Hibrida Komputasional Linguistik & Pendukung Keputusan")
-st.markdown("---")
+st.caption("Sistem Hibrida Komputasional Linguistik & Pendukung Keputusan")
 
 # Load ML Model
 # model_path = 'model_sintaksis_real.pkl'
@@ -371,21 +371,21 @@ else:
 col_input, col_output = st.columns([1, 1.5])
 
 with col_input:
-    st.header("Form Analisis Cepat")
+    st.header(":material/quick_reference: Form Analisis Cepat")
     st.caption("Input disederhanakan hanya pada parameter klinis yang wajib.")
     
     with st.container(border=True):
         # UI KINI SANGAT BERSIH! HANYA 4 INPUTAN.
-        tingkat_asd_input = st.selectbox("Baseline Tingkat ASD Klien", ["ASD-1", "ASD-2", "ASD-3"])
-        konteks = st.selectbox("Konteks Interaksi", ["Bermain", "Percakapan", "Bercerita", "Deskripsi Gambar", "Instruksi"])
-        echolalia = st.radio("Terdeteksi Echolalia / Repetisi?", ["Tidak", "Ya"], horizontal=True)
+        tingkat_asd_input = st.selectbox(":material/neurology: Baseline Tingkat ASD Klien", ["ASD-1", "ASD-2", "ASD-3"])
+        konteks = st.selectbox(":material/dashboard: Konteks Interaksi", ["Bermain", "Percakapan", "Bercerita", "Deskripsi Gambar", "Instruksi"])
+        echolalia = st.radio(":material/record_voice_over: Terdeteksi Echolalia / Repetisi?", ["Tidak", "Ya"], horizontal=True)
+
+        ujaran_anak = st.text_area(":material/edit_note: Teks Ujaran Anak", placeholder="Ketikkan ujaran anak di sini...", height=100)
         
-        ujaran_anak = st.text_area("Teks Ujaran Anak", placeholder="Ketikkan ujaran anak di sini...", height=100)
-        
-        tombol_analisis = st.button("Auto-Parse & Analisis", use_container_width=True)
+        tombol_analisis = st.button("Auto-Parse & Analisis", type="primary", width="stretch")
 
 with col_output:
-    st.header("Dashboard Diagnosis")
+    st.header(":material/dashboard: Dashboard Diagnosis")
     
     if tombol_analisis and ujaran_anak:
         with st.spinner("Mesin NLP sedang membedah kalimat..."):
@@ -395,7 +395,7 @@ with col_output:
             mlu_hitung = len(token_list)
             
             # PARSER OTOMATIS BEKERJA DI SINI
-            struktur_sintaksis_otomatis = auto_parse_sintaksis(ujaran_bersih, echolalia)
+            struktur_sintaksis_otomatis, pola_per_token = auto_parse_sintaksis(ujaran_bersih, echolalia)
             
             kompleksitas_kalimat = tentukan_kompleksitas(struktur_sintaksis_otomatis)
             intensi_komunikasi = tentukan_intensi(ujaran_bersih, konteks)
@@ -426,23 +426,55 @@ with col_output:
             
             # Menampilkan Output
             # st.success("Analisis Selesai!")
-            st.toast("Analisis Selesai!", icon="✅")
+            st.toast("Analisis Selesai!", icon=":material/check_circle:")
 
             
-            # 1. Output Syntactic Parsing (Otomatis)
+            # 1. Output Syntactic Parsing (Otomatis) dengan Anotasi
+            WARNA_ROLE = {
+                "S": ("#3B82F6", "white"),
+                "P": ("#10B981", "white"),
+                "O": ("#F59E0B", "white"),
+                "Ket": ("#8B5CF6", "white"),
+                "Negasi": ("#EF4444", "white"),
+                "Echolalia": ("#6B7280", "white"),
+                "Repetisi": ("#6B7280", "white"),
+            }
+
             st.subheader("1. Pembedahan Sintaksis (Auto-Parser)")
-            st.code(f"Pola Terdeteksi: {struktur_sintaksis_otomatis}\nKompleksitas : {kompleksitas_kalimat}\nMLU Aktual   : {mlu_hitung} kata", language="markdown")
+
+            if pola_per_token and len(pola_per_token) == len(token_list):
+                annotated_args = []
+                for i, kata in enumerate(token_list):
+                    role = pola_per_token[i]
+                    bg, fg = WARNA_ROLE.get(role, ("#E5E7EB", "#111827"))
+                    annotated_args.append((kata, role, bg, fg))
+                    if i < len(token_list) - 1:
+                        annotated_args.append(" ")
+                annotated_text(*annotated_args)
+            elif struktur_sintaksis_otomatis in ("Echolalia", "Repetisi"):
+                label = struktur_sintaksis_otomatis
+                bg, fg = WARNA_ROLE.get(label, ("#6B7280", "white"))
+                annotated_args = []
+                for i, kata in enumerate(token_list):
+                    annotated_args.append((kata, label, bg, fg))
+                    if i < len(token_list) - 1:
+                        annotated_args.append(" ")
+                annotated_text(*annotated_args)
+            else:
+                st.code(f"Pola: {struktur_sintaksis_otomatis}", language="markdown")
+
+            st.caption(f"**Pola:** {struktur_sintaksis_otomatis}  |  **Kompleksitas:** {kompleksitas_kalimat}  |  **MLU:** {mlu_hitung} kata")
             
             # 2. Output Pemahaman & Pragmatik
             st.subheader("2. Prediksi Kognitif & Pragmatik")
             c1, c2 = st.columns(2)
-            c1.info(f"**Pemahaman:** {prediksi_pemahaman}")
-            c2.info(f"**Intensi:** {intensi_komunikasi}")
+            c1.info(f"**Pemahaman:** {prediksi_pemahaman}", icon=":material/psychology:")
+            c2.info(f"**Intensi:** {intensi_komunikasi}", icon=":material/chat:")
             if warning_sanity:
-                st.caption(f"⚙️ Sanity check: {warning_sanity}")
+                st.caption(f":material/tune: Sanity check: {warning_sanity}")
             
             # 3. Output Klinis IKLA
-            with st.expander("Skor Indeks Keparahan Linguistik (IKLA DSM-5)", expanded=True):
+            with st.expander("Skor Indeks Keparahan Linguistik (IKLA DSM-5)", expanded=True, icon=":material/analytics:"):
                 pct = skor_ikla / 90 * 100
                 if pct <= 33:
                     bar_color = "#e53e3e"
@@ -453,7 +485,7 @@ with col_output:
 
                 col_metrik, col_gauge = st.columns([1, 1.5])
                 with col_metrik:
-                    st.metric(label="Total Skor IKLA", value=f"{skor_ikla} / 90")
+                    st.metric(label=":material/score: Total Skor IKLA", value=f"{skor_ikla} / 90")
                 with col_gauge:
                     st.markdown(f"""
                     <div style="margin-top: 0.5rem;">
@@ -474,7 +506,7 @@ with col_output:
                     {"Komponen": k, "Skor": v[0], "Maks": v[1]}
                     for k, v in rincian_skor.items()
                 ]).set_index("Komponen")
-                st.subheader("Rincian Skor per Komponen")
+                st.subheader(":material/bar_chart: Rincian Skor per Komponen")
                 st.bar_chart(df_sub, y="Skor", stack=False, height=250)
 
             # 3. Rekomendasi Sistem (Revisi Layout dengan Styling Konsisten)
@@ -494,7 +526,6 @@ with col_output:
                 # Menggunakan st.dataframe dengan hide_index agar terlihat seperti panel data
                 st.dataframe(
                     df_rekomendasi,
-                    use_container_width=True,
                     hide_index=True,
                     column_config={
                         "Kategori": st.column_config.TextColumn("Kategori", width="small"),
@@ -504,18 +535,17 @@ with col_output:
                 
                 # 3. Rekomendasi Tambahan (menggunakan style peringatan yang konsisten)
                 if rekomendasi_tambahan:
-                    st.markdown("---")
                     st.markdown("**Catatan Rekomendasi Tambahan:**")
                     for label, skor, maks, teks in rekomendasi_tambahan:
                         skor_str = f" ({skor}/{maks})" if skor is not None else ""
-                        with st.expander(f"⚠️ {label}{skor_str}"):
+                        with st.expander(f":material/warning: {label}{skor_str}"):
                             st.write(teks)
 
         # Penanganan Echolalia (Tetap konsisten dengan style error/warning)
         if echolalia == "Ya":
-            st.error("⚠️ Catatan Klinis: Terapkan intervensi potong-rantai untuk mengatasi repetisi Echolalia.")
+            st.error("Catatan Klinis: Terapkan intervensi potong-rantai untuk mengatasi repetisi Echolalia.", icon=":material/medical_services:")
                             
     elif tombol_analisis and not ujaran_anak:
-        st.error("Ujaran anak tidak boleh kosong!")
+        st.error("Ujaran anak tidak boleh kosong!", icon=":material/error:")
     else:
-        st.info("Form siap. Masukkan ujaran dan klik tombol di sebelah kiri.")
+        st.info("Form siap. Masukkan ujaran dan klik tombol di sebelah kiri.", icon=":material/info:")
