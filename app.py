@@ -360,7 +360,7 @@ st.subheader("Sistem Hibrida Komputasional Linguistik & Pendukung Keputusan")
 st.markdown("---")
 
 # Load ML Model
-model_path = 'model_sintaksis_real.pkl'
+model_path = 'model_autism_syntax_rf.pkl'
 model_ready = os.path.exists(model_path)
 if model_ready:
     model_ai = joblib.load(model_path)
