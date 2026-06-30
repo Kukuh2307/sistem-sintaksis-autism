@@ -140,8 +140,8 @@ Parser dengan leksikon diperluas (~80 verba, ~80 nomina, ~30 keterangan, 6 negas
 4. **Modal → P**: `mau`, `ingin`, `bisa`, `dapat`, `harus`, `akan` → `P` + tandai `has_predikat = True`
 5. **Verba → P**: Semua verba selalu jadi `P`, tidak peduli status `has_predikat` (verba setelah modal tetap P, bukan O)
 6. **Nomina**: Sebelum predikat pertama → `S`; setelah predikat → `O`
-7. **Reduksi Duplikasi**: Label identik berurutan digabung (P+P → P)
-8. **Fallback**: Kata di luar kamus → `S` (jika belum ada S), `O` (jika sudah ada predikat), `Ket` (lainnya)
+7. **Fallback**: Kata di luar kamus → `S` (jika belum ada S), `P` (jika S sudah ada dan belum ada predikat), `O` (jika sudah ada predikat)
+8. **Reduksi Duplikasi**: Label identik berurutan digabung (P+P → P)
 
 #### 2b. Rule-based Parser — untuk Feature ML
 
@@ -166,7 +166,7 @@ Parser berbasis kamus leksikon mini dan logika posisi kata (kiri ke kanan). Outp
 5. **Modal → P**: `mau`, `ingin` → `P` + tandai `has_predikat = True`
 6. **Verba**: Sebelum predikat → `P`; setelah predikat → `O`
 7. **Logika S vs O**: Nomina sebelum predikat pertama = **S**; nomina setelah predikat = **O**
-8. **Fallback**: Kata di luar kamus → S (jika belum ada S), O (jika sudah ada predikat), Ket (lainnya)
+8. **Fallback**: Kata di luar kamus → S (jika belum ada S), P (jika S sudah ada dan belum ada predikat), O (jika sudah ada predikat)
 9. **Reduksi Duplikasi**: Deretan label identik berurutan digabung (contoh: `[Ket, Ket, Ket]` → `[Ket]`)
 10. **Output**: String dipisah `+`, contoh: `"S+P+O"`, `"Echolalia"`, `"Repetisi"`
 
