@@ -10,6 +10,18 @@ ATLAS adalah sistem berbasis **Streamlit** yang menganalisis ujaran anak autisme
 
 ---
 
+## Navigasi Aplikasi
+
+Aplikasi memiliki 3 halaman yang dapat diakses melalui navigasi atas:
+
+| Halaman | Ikon | Fungsi |
+|---|---|---|
+| **Analisis** | `:material/quick_reference:` | Form input ujaran → parsing SPOK → prediksi ML → skor IKLA → rekomendasi terapi |
+| **Dataset** | `:material/table:` | Tabel interaktif dataset + visualisasi distribusi data (ASD, JK, kategori, MLU, dll) |
+| **Evaluasi Model** | `:material/analytics:` | Confusion matrix, cross-validation, classification report, feature importance |
+
+---
+
 ## Alur Proses (Pipeline)
 
 ```
@@ -58,7 +70,7 @@ Input Ujaran Anak
 │  - Random Forest (100 trees)│
 │  - Fitur: TF-IDF + OneHot + │
 │    StandardScaler           │
-│  - Akurasi: 98.49%          │
+│  - Akurasi: 93.96%          │
 │  Output: Belum Berkembang / │
 │          Berkembang Sedang /│
 │          Sudah Mahir        │
@@ -98,7 +110,7 @@ Input Ujaran Anak
 
 ## Detail Tahapan
 
-### Tahap 1: Text Preprocessing (`app.py:20–23`)
+### Tahap 1: Text Preprocessing (`app_pages/home.py:12`)
 
 | Langkah | Proses |
 |---|---|
@@ -158,7 +170,7 @@ Parser berbasis kamus leksikon mini dan logika posisi kata (kiri ke kanan). Outp
 9. **Reduksi Duplikasi**: Deretan label identik berurutan digabung (contoh: `[Ket, Ket, Ket]` → `[Ket]`)
 10. **Output**: String dipisah `+`, contoh: `"S+P+O"`, `"Echolalia"`, `"Repetisi"`
 
-### Tahap 3a: Kompleksitas Kalimat (`app.py:106–115`)
+### Tahap 3a: Kompleksitas Kalimat (`app_pages/home.py:155`)
 
 | Aturan | Hasil |
 |---|---|
@@ -167,7 +179,7 @@ Parser berbasis kamus leksikon mini dan logika posisi kata (kiri ke kanan). Outp
 | `+` muncul >= 3 kali | **Kalimat Majemuk (K4)** |
 | Selainnya (2 tanda `+`) | **Kalimat Sederhana (K3)** |
 
-### Tahap 3b: Intensi Komunikasi (`app.py:117–127`)
+### Tahap 3b: Intensi Komunikasi (`app_pages/home.py:166`)
 
 | Aturan Kata Kunci | Intensi |
 |---|---|
@@ -176,7 +188,7 @@ Parser berbasis kamus leksikon mini dan logika posisi kata (kiri ke kanan). Outp
 | Konteks = instruksi ATAU mengandung `sudah`, `iya`, `belum` | **Answering** |
 | Default | **Commenting** |
 
-### Tahap 4: Prediksi Machine Learning (`app.py:411–478`, `model2.ipynb`)
+### Tahap 4: Prediksi Machine Learning (`model.ipynb`, implementasi di `app_pages/home.py:12–155`)
 
 **Model**: Random Forest Classifier (100 trees, `random_state=42`, `class_weight='balanced'`)
 
@@ -191,14 +203,14 @@ Parser berbasis kamus leksikon mini dan logika posisi kata (kiri ke kanan). Outp
 **Target** (3 kelas): `Belum Berkembang` (33), `Berkembang Sedang` (48), `Sudah Mahir` (51)
 
 **Kinerja Model** (5-fold Stratified Cross-Validation):
-- Akurasi: **98.49%**
-- F1-score (macro): **98.34%**
+- Akurasi: **93.96%**
+- F1-score (macro): **93.99%**
 
 **Fallback** (jika file `.pkl` tidak ditemukan):
 - MLU <= 1 → `Belum Berkembang`
 - MLU > 1 → `Sudah Mahir`
 
-### Tahap 5: Kalkulator IKLA — DSM-5 (`app.py:132–155`)
+### Tahap 5: Kalkulator IKLA — DSM-5 (`app_pages/home.py:178`)
 
 Skor total maksimal: **90**, terdiri dari 6 komponen:
 
@@ -221,7 +233,7 @@ Skor total maksimal: **90**, terdiri dari 6 komponen:
 | 31 – 60 | **Autisme Sedang (Level 2)** |
 | > 60 | **Autisme Ringan (Level 1)** |
 
-### Tahap 6: Sanity Check (`app.py:330–354`)
+### Tahap 6: Sanity Check (`app_pages/home.py:371`)
 
 #### Validasi MLU vs Level Pemahaman
 
@@ -238,7 +250,7 @@ Jika prediksi ML tidak sesuai rentang MLU → koreksi paksa ke level yang sesuai
 - "Sudah Mahir" tapi IKLA <= 60 → turunkan ke "Berkembang Sedang"
 - "Berkembang Sedang" tapi IKLA <= 30 → turunkan ke "Belum Berkembang"
 
-### Tahap 7: Rekomendasi Terapis (`app.py:157–323`)
+### Tahap 7: Rekomendasi Terapis (`app_pages/home.py:203`)
 
 #### Matriks Rekomendasi (3 level × 4 intensi = 12 skenario)
 
@@ -266,9 +278,11 @@ Jika MLU <= 2 → rekomendasi ekspansi kalimat (+1 kata dari produksi anak).
 
 ## Dataset
 
+Dataset dapat dieksplorasi secara interaktif melalui halaman **Dataset** pada aplikasi, yang menampilkan tabel lengkap dengan filtering serta visualisasi distribusi berdasarkan berbagai kategori (ASD, jenis kelamin, konteks, kompleksitas, intensi, MLU, dll).
+
 **Sumber**: 65 anak autisme (A001–A065), 2 ujaran per anak = **132 sampel**
 
-Dataset final (`data_final_siap_ml.csv`) memiliki **14 kolom** sebagai berikut:
+Dataset final (`dataset.csv`) memiliki **14 kolom** sebagai berikut:
 
 | # | Kolom | Deskripsi | Asal |
 |---|---|---|---|
@@ -281,39 +295,46 @@ Dataset final (`data_final_siap_ml.csv`) memiliki **14 kolom** sebagai berikut:
 | 7 | `Struktur Sintaksis` | Pola SPOK label manual | Data mentah |
 | 8 | `MLU` | Mean Length of Utterance (jumlah kata) | Data mentah |
 | 9 | `Echolalia` | Ya/Tidak | Data mentah |
-| 10 | `Ujaran Bersih` | Hasil preprocessing (case folding + cleaning) | `pre_processing.py` |
-| 11 | `Token` | Hasil tokenisasi dalam bentuk list | `pre_processing.py` |
-| 12 | `Kategori Pemahaman` | Belum Berkembang / Berkembang Sedang / Sudah Mahir | `pre_processing.py` |
-| 13 | `Kompleksitas Kalimat` | K1 (Kata Tunggal) / K2 (Frasa) / K3 (Kalimat Sederhana) / K4 (Kalimat Majemuk) | `label-real.py` |
-| 14 | `Intensi Komunikasi` | Protesting / Requesting / Answering / Commenting | `label-real.py` |
+| 10 | `Ujaran Bersih` | Hasil preprocessing (case folding + cleaning) | preprocessing (`app_pages/home.py:12`) |
+| 11 | `Token` | Hasil tokenisasi dalam bentuk list | preprocessing (`app_pages/home.py:12`) |
+| 12 | `Kategori Pemahaman` | Belum Berkembang / Berkembang Sedang / Sudah Mahir | labeling manual saat pembuatan dataset |
+| 13 | `Kompleksitas Kalimat` | K1 (Kata Tunggal) / K2 (Frasa) / K3 (Kalimat Sederhana) / K4 (Kalimat Majemuk) | `app_pages/home.py:155` |
+| 14 | `Intensi Komunikasi` | Protesting / Requesting / Answering / Commenting | `app_pages/home.py:166` |
 
-### Pipeline Pelabelan Dataset
+---
 
-1. **`pre_processing.py`**: Preprocessing (`Ujaran Anak` → `Ujaran Bersih` + `Token`) + Aturan `tentukan_kategori()` → `Kategori Pemahaman`
-2. **`label-real.py`**: Ekstraksi fitur `Kompleksitas Kalimat` (K1–K4) + `Intensi Komunikasi`
+## Evaluasi Model
+
+Halaman **Evaluasi Model** menyediakan analisis performa model Random Forest secara mendetail:
+
+| Fitur | Deskripsi |
+|---|---|
+| **Confusion Matrix** | Heatmap prediksi model vs label aktual pada seluruh dataset |
+| **Cross-Validation** | 5-fold Stratified CV — akurasi per fold, rata-rata akurasi (93.96%), F1-score (93.99%) |
+| **Classification Report** | Precision, recall, F1-score per kelas (Belum Berkembang, Berkembang Sedang, Sudah Mahir) |
+| **Feature Importance** | Top 20 fitur paling penting hasil ekstraksi dari Random Forest |
+
+Model dievaluasi menggunakan metrik yang sama seperti pada notebook `model.ipynb`.
 
 ---
 
 ## Struktur File
 
 ```
-├── app.py                          # Aplikasi Streamlit utama
-├── pre_processing.py               # Preprocessing & pelabelan dataset
-├── label-real.py                   # Ekstraksi fitur dataset
-├── model2.ipynb                    # Notebook training model Random Forest
-├── model_sintaksis_real.pkl        # Model ML terlatih (Random Forest)
-├── model_autism_syntax_rf.pkl      # Model ML utama (Random Forest, TfidfVectorizer)
+├── app.py                          # Entry point — navigasi multipage (st.navigation)
+├── app_pages/                      # Halaman-halaman aplikasi
+│   ├── home.py                     # Halaman Analisis (form input + dashboard)
+│   ├── dataset.py                  # Halaman Dataset (tabel + visualisasi data)
+│   └── evaluation.py               # Halaman Evaluasi Model (confusion matrix + metrik)
+├── model_autism_syntax_rf.pkl      # Model ML terlatih (Random Forest)
+├── model.ipynb                     # Notebook training model
 ├── version.py                      # Cek versi pustaka
 ├── requirements.txt                # Dependensi Python
-├── runtime.txt                     # Versi Python untuk deployment
 ├── README.md                       # Dokumentasi sistem
 ├── .streamlit/
 │   └── config.toml                 # Tema Fluent (Light, Blue #0078D4)
-├── dataset/
-│   ├── data_real.csv               # Dataset mentah (9 kolom, 132 sampel)
-│   ├── data_real_lengkap.csv       # Setelah preprocessing + Kategori Pemahaman
-│   └── data_final_siap_ml.csv      # Setelah ekstraksi fitur (14 kolom, siap ML)
-└── __pycache__/                    # Cache bytecode Python
+└── dataset/
+    └── dataset.csv                 # Dataset final (14 kolom, 132 sampel)
 ```
 
 ---
@@ -329,6 +350,7 @@ Dataset final (`data_final_siap_ml.csv`) memiliki **14 kolom** sebagai berikut:
 | **Model Serialization** | joblib >= 1.3 |
 | **Text Processing** | regex (re) |
 | **Anotasi Warna** | st-annotated-text |
+| **Visualisasi** | matplotlib, Streamlit native charts |
 | **Ikon** | Google Material Symbols |
 | **Tema** | Fluent Design (Light, Blue #0078D4, Open Sans) |
 | **Lingkungan** | Python 3.12 |
