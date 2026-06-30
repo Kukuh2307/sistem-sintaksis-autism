@@ -9,7 +9,7 @@ from annotated_text import annotated_text
 # CONFIGURATION & PAGE SETUP
 # ==========================================
 st.set_page_config(
-    page_title="Autism Syntax Assistant (ASA)",
+    page_title="ATLAS (Automated Text & Language Assessment System)",
     page_icon=":material/psychology:",
     layout="wide"
 )
@@ -440,7 +440,7 @@ def sanity_check_prediksi(prediksi, mlu, skor_ikla):
 # ==========================================
 # APP UI & FRONTEND
 # ==========================================
-st.title("Autism Syntax Assistant (ASA)")
+st.title("ATLAS (Automated Text & Language Assessment System)")
 st.caption("Sistem Hibrida Komputasional Linguistik & Pendukung Keputusan")
 
 # Load ML Model
@@ -537,7 +537,7 @@ with col_output:
                 "Repetisi": ("#6B7280", "white"),
             }
 
-            st.subheader(":material/syntax: 1. Pembedahan Sintaksis (Parser)")
+            st.subheader("1. Pembedahan Sintaksis (Parser)")
 
             if pola_lanjutan and len(pola_lanjutan) == len(token_list):
                 annotated_args = []

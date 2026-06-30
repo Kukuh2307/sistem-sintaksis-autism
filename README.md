@@ -1,12 +1,12 @@
-# Autism Syntax Assistant (ASA)
+# ATLAS (Automated Text & Language Assessment System)
 
-Sistem Hibrida Komputasional Linguistik & Pendukung Keputusan untuk Analisis Sintaksis Ujaran Anak Autisme.
+Sistem Hibrida Komputasional Linguistik & Pendukung Keputusan untuk Assessment Linguistik & Sintaksis Ujaran Anak Autisme.
 
 ---
 
 ## Gambaran Umum
 
-ASA adalah sistem berbasis **Streamlit** yang menganalisis ujaran anak autisme secara sintaksis dan pragmatik. Sistem menggabungkan **hybrid parser SPOK** (spaCy dependency parsing untuk visualisasi + rule-based untuk ML), **model Machine Learning Random Forest**, serta **kalkulator klinis berbasis DSM-5** untuk menghasilkan diagnosis tingkat keparahan autisme dan rekomendasi intervensi terapi.
+ATLAS adalah sistem berbasis **Streamlit** yang menganalisis ujaran anak autisme secara sintaksis dan pragmatik. Sistem menggabungkan **hybrid parser SPOK** (rule-based expanded lexicon untuk visualisasi + rule-based mini untuk ML), **model Machine Learning Random Forest**, serta **kalkulator klinis berbasis DSM-5** untuk menghasilkan diagnosis tingkat keparahan autisme dan rekomendasi intervensi terapi.
 
 ---
 
@@ -28,14 +28,15 @@ Input Ujaran Anak
 ┌─────────────────────────────────────┐
 │ Tahap 2: Hybrid Parsing SPOK        │
 │  ┌─────────────────────────────┐    │
-│  │ 2a. spaCy (Dependency       │    │
-│  │     Parsing) — untuk        │    │
+│  │ 2a. Rule-based Expanded     │    │
+│  │     Lexicon — untuk         │    │
 │  │     visualisasi anotasi     │    │
-│  │  Model: id_core_news_sm     │    │
+│  │  ~200+ kata (verba, nomina, │    │
+│  │  keterangan, negasi, modal) │    │
 │  └─────────────┬───────────────┘    │
 │                ▼                    │
 │  ┌─────────────────────────────┐    │
-│  │ 2b. Rule-based (Lexicon) —  │    │
+│  │ 2b. Rule-based Mini —       │    │
 │  │     untuk feature ML        │    │
 │  │  Kamus mini + logika posisi │    │
 │  │  Output: S+P+O / Ket+S+P+O │    │
@@ -107,20 +108,28 @@ Input Ujaran Anak
 
 ### Tahap 2: Hybrid Parsing SPOK
 
-#### 2a. spaCy Dependency Parsing — untuk Visualisasi
+#### 2a. Rule-based Expanded Lexicon — untuk Visualisasi
 
-Menggunakan model **`id_core_news_sm`** (bahasa Indonesia) dari spaCy untuk dependency parsing akurat. Label Universal Dependencies di-map ke format SPOK:
+Parser dengan leksikon diperluas (~80 verba, ~80 nomina, ~30 keterangan, 6 negasi, 6 modal) untuk anotasi SPOK berwarna via `st-annotated-text`.
 
-| spaCy `dep_` | Peran | Keterangan |
-|:---|:---|:---|
-| `nsubj`, `nsubj:pass` | **S** | Subjek kalimat |
-| `root`, `cop` | **P** | Predikat (root klausa) |
-| `obj`, `iobj` | **O** | Objek langsung/tidak langsung |
-| `obl`, `advmod`, `nmod` | **Ket** | Keterangan/adverbia |
-| `neg` | **Negasi** | Partikel negasi |
-| `det`, `case`, `aux`, `punct` | *(skip)* | Kata fungsi tidak dianotasi |
+| Kategori | Jumlah | Contoh |
+|---|---|---|
+| **KATA_VERBA** | ~80 | `makan`, `minum`, `baca`, `cuci`, `beli`, `lari`, `mandi`, `tidur`, `tulis`, `buka`, ... |
+| **KATA_NOMINA** | ~80 | `saya`, `mama`, `papa`, `kakak`, `adik`, `buku`, `sepeda`, `piring`, `baju`, `bola`, ... |
+| **KATA_KET** | ~30 | `kemarin`, `tadi`, `nanti`, `di`, `ke`, `dari`, `sangat`, `cepat`, `sudah`, `sedang`, ... |
+| **KATA_NEGASI** | 6 | `tidak`, `bukan`, `jangan`, `belum`, `tak`, `tiada` |
+| **KATA_MODAL** | 6 | `mau`, `ingin`, `bisa`, `dapat`, `harus`, `akan` |
 
-**Fallback POS tagging** untuk label yang tidak dikenali: `NOUN/PROPN/PRON` sebelum predikat → S, setelah predikat → O; `VERB` → P; sisanya → Ket.
+**Aturan Parsing:**
+
+1. **Echolalia/Repetisi**: Input `echolalia == "Ya"` → label `"Echolalia"`; token >= 2 dan semua sama → `"Repetisi"`
+2. **Frasa Keterangan Bersambung**: Preposisi `di/ke/dari` → kata berikutnya otomatis `Ket`
+3. **Negasi**: `tidak`, `bukan`, dll → `Negasi`
+4. **Modal → P**: `mau`, `ingin`, `bisa`, `dapat`, `harus`, `akan` → `P` + tandai `has_predikat = True`
+5. **Verba → P**: Semua verba selalu jadi `P`, tidak peduli status `has_predikat` (verba setelah modal tetap P, bukan O)
+6. **Nomina**: Sebelum predikat pertama → `S`; setelah predikat → `O`
+7. **Reduksi Duplikasi**: Label identik berurutan digabung (P+P → P)
+8. **Fallback**: Kata di luar kamus → `S` (jika belum ada S), `O` (jika sudah ada predikat), `Ket` (lainnya)
 
 #### 2b. Rule-based Parser — untuk Feature ML
 
@@ -141,10 +150,13 @@ Parser berbasis kamus leksikon mini dan logika posisi kata (kiri ke kanan). Outp
 1. **Echolalia**: Jika input `echolalia == "Ya"` → label `"Echolalia"`
 2. **Repetisi**: Jika token >= 2 dan `set(token)` hanya 1 unsur → label `"Repetisi"`
 3. **Frasa Keterangan Bersambung**: Preposisi `di/ke/dari` → kata berikutnya otomatis `Ket`
-4. **Logika S vs O**: Nomina sebelum predikat pertama = **S**; nomina setelah predikat = **O**
-5. **Fallback**: Kata di luar kamus → S (jika belum ada S), O (jika sudah ada predikat), Ket (lainnya)
-6. **Reduksi Duplikasi**: Deretan label identik berurutan digabung (contoh: `[Ket, Ket, Ket]` → `[Ket]`)
-7. **Output**: String dipisah `+`, contoh: `"S+P+O"`, `"Echolalia"`, `"Repetisi"`
+4. **Negasi**: `tidak`, `bukan`, `jangan`, `belum` → `Negasi`
+5. **Modal → P**: `mau`, `ingin` → `P` + tandai `has_predikat = True`
+6. **Verba**: Sebelum predikat → `P`; setelah predikat → `O`
+7. **Logika S vs O**: Nomina sebelum predikat pertama = **S**; nomina setelah predikat = **O**
+8. **Fallback**: Kata di luar kamus → S (jika belum ada S), O (jika sudah ada predikat), Ket (lainnya)
+9. **Reduksi Duplikasi**: Deretan label identik berurutan digabung (contoh: `[Ket, Ket, Ket]` → `[Ket]`)
+10. **Output**: String dipisah `+`, contoh: `"S+P+O"`, `"Echolalia"`, `"Repetisi"`
 
 ### Tahap 3a: Kompleksitas Kalimat (`app.py:106–115`)
 
@@ -311,7 +323,7 @@ Dataset final (`data_final_siap_ml.csv`) memiliki **14 kolom** sebagai berikut:
 | Komponen | Tools |
 |---|---|
 | **Framework** | Streamlit 1.58.0 |
-| **Syntactic Parsing (AI)** | spaCy 3.7.5 + `id_core_news_sm` (dependency parsing bahasa Indonesia) |
+| **Syntactic Parsing** | Rule-based Expanded Lexicon (~200 kata) |
 | **Machine Learning** | scikit-learn 1.6.1 (Random Forest) |
 | **Data Processing** | pandas 2.2.3 |
 | **Model Serialization** | joblib >= 1.3 |
@@ -341,9 +353,6 @@ File konfigurasi tema: `.streamlit/config.toml`
 ```bash
 # Install dependencies
 pip install -r requirements.txt
-
-# Download model spaCy Indonesia
-python -m spacy download id_core_news_sm
 
 # Jalankan aplikasi
 streamlit run app.py
