@@ -4,6 +4,25 @@ import re
 import joblib
 import os
 from annotated_text import annotated_text
+import spacy
+
+# ==========================================
+# LOAD SPACY MODEL
+# ==========================================
+@st.cache_resource
+def load_spacy_nlp():
+    try:
+        return spacy.load("id_core_news_sm")
+    except OSError:
+        try:
+            spacy.cli.download("id_core_news_sm")
+            return spacy.load("id_core_news_sm")
+        except Exception:
+            return None
+
+nlp = load_spacy_nlp()
+if nlp is None:
+    st.warning("Model bahasa Indonesia (id_core_news_sm) gagal dimuat. Parser AI tidak tersedia.")
 
 # ==========================================
 # CONFIGURATION & PAGE SETUP
@@ -99,6 +118,46 @@ def auto_parse_sintaksis(ujaran_bersih, echolalia):
 
     # Mengembalikan hasil dengan pemisah "+"
     return ("+".join(pola_final) if pola_final else "Tidak Teridentifikasi"), pola_kasar
+
+# ==========================================
+# 2b. TAHAP PARSER SPACY (AI AKURAT)
+# ==========================================
+MAP_SPACY_ROLE = {
+    "nsubj": "S", "nsubj:pass": "S",
+    "root": "P", "cop": "P",
+    "obj": "O", "iobj": "O",
+    "obl": "Ket", "advmod": "Ket", "nmod": "Ket", "obl:prep": "Ket",
+    "neg": "Negasi",
+}
+
+SKIP_DEP = {"det", "case", "aux", "mark", "punct", "cc", "expl", "acl"}
+
+def parse_spacy_spok(ujaran_bersih):
+    if nlp is None:
+        return "Tidak Teridentifikasi", []
+    doc = nlp(ujaran_bersih)
+    token_roles = []
+    for token in doc:
+        dep = token.dep_
+        if dep in SKIP_DEP:
+            continue
+        role = MAP_SPACY_ROLE.get(dep)
+        if role is None:
+            pos = token.pos_
+            if pos in ("NOUN", "PROPN", "PRON") and "S" not in token_roles:
+                role = "S"
+            elif pos in ("VERB", "AUX"):
+                role = "P"
+            elif pos in ("NOUN", "PROPN", "PRON"):
+                role = "O"
+            else:
+                role = "Ket"
+        token_roles.append(role)
+    pola_final = []
+    for p in token_roles:
+        if not pola_final or pola_final[-1] != p:
+            pola_final.append(p)
+    return ("+".join(pola_final) if pola_final else "Tidak Teridentifikasi"), token_roles
 
 # ==========================================
 # 3. TAHAP EKSTRAKSI FITUR (KOMPLEKSITAS & INTENSI)
@@ -394,8 +453,14 @@ with col_output:
             token_list = ujaran_bersih.split()
             mlu_hitung = len(token_list)
             
-            # PARSER OTOMATIS BEKERJA DI SINI
+            # PARSER OTOMATIS (RULE-BASED) — untuk ML
             struktur_sintaksis_otomatis, pola_per_token = auto_parse_sintaksis(ujaran_bersih, echolalia)
+            
+            # PARSER SPACY (AI) — untuk visualisasi
+            try:
+                struktur_spacy, pola_spacy = parse_spacy_spok(ujaran_bersih)
+            except Exception:
+                struktur_spacy, pola_spacy = struktur_sintaksis_otomatis, pola_per_token
             
             kompleksitas_kalimat = tentukan_kompleksitas(struktur_sintaksis_otomatis)
             intensi_komunikasi = tentukan_intensi(ujaran_bersih, konteks)
@@ -450,19 +515,19 @@ with col_output:
                 "Repetisi": ("#6B7280", "white"),
             }
 
-            st.subheader("1. Pembedahan Sintaksis (Auto-Parser)")
+            st.subheader(":material/syntax: 1. Pembedahan Sintaksis (AI-Parser)")
 
-            if pola_per_token and len(pola_per_token) == len(token_list):
+            if pola_spacy and len(pola_spacy) == len(token_list):
                 annotated_args = []
                 for i, kata in enumerate(token_list):
-                    role = pola_per_token[i]
+                    role = pola_spacy[i]
                     bg, fg = WARNA_ROLE.get(role, ("#E5E7EB", "#111827"))
                     annotated_args.append((kata, role, bg, fg))
                     if i < len(token_list) - 1:
                         annotated_args.append(" ")
                 annotated_text(*annotated_args)
-            elif struktur_sintaksis_otomatis in ("Echolalia", "Repetisi"):
-                label = struktur_sintaksis_otomatis
+            elif struktur_spacy in ("Echolalia", "Repetisi"):
+                label = struktur_spacy
                 bg, fg = WARNA_ROLE.get(label, ("#6B7280", "white"))
                 annotated_args = []
                 for i, kata in enumerate(token_list):
@@ -471,9 +536,9 @@ with col_output:
                         annotated_args.append(" ")
                 annotated_text(*annotated_args)
             else:
-                st.code(f"Pola: {struktur_sintaksis_otomatis}", language="markdown")
+                st.code(f"Pola: {struktur_spacy}", language="markdown")
 
-            st.caption(f"**Pola:** {struktur_sintaksis_otomatis}  |  **Kompleksitas:** {kompleksitas_kalimat}  |  **MLU:** {mlu_hitung} kata")
+            st.caption(f"**Pola AI:** {struktur_spacy}  |  **Pola ML:** {struktur_sintaksis_otomatis}  |  **Kompleksitas:** {kompleksitas_kalimat}  |  **MLU:** {mlu_hitung} kata")
             
             # 2. Output Pemahaman & Pragmatik
             st.subheader("2. Prediksi Kognitif & Pragmatik")
