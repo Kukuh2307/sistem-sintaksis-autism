@@ -6,7 +6,7 @@ Sistem Hibrida Komputasional Linguistik & Pendukung Keputusan untuk Analisis Sin
 
 ## Gambaran Umum
 
-ASA adalah sistem berbasis **Streamlit** yang menganalisis ujaran anak autisme secara sintaksis dan pragmatik. Sistem menggabungkan **rule-based parser SPOK** (Tahap 1–3) dengan **model Machine Learning Random Forest** (Tahap 4) serta **kalkulator klinis berbasis DSM-5** (Tahap 5) untuk menghasilkan diagnosis tingkat keparahan autisme dan rekomendasi intervensi terapi.
+ASA adalah sistem berbasis **Streamlit** yang menganalisis ujaran anak autisme secara sintaksis dan pragmatik. Sistem menggabungkan **hybrid parser SPOK** (spaCy dependency parsing untuk visualisasi + rule-based untuk ML), **model Machine Learning Random Forest**, serta **kalkulator klinis berbasis DSM-5** untuk menghasilkan diagnosis tingkat keparahan autisme dan rekomendasi intervensi terapi.
 
 ---
 
@@ -25,16 +25,22 @@ Input Ujaran Anak
 └─────────────┬───────────────┘
               │
               ▼
-┌─────────────────────────────┐
-│ Tahap 2: Auto-Parser SPOK   │
-│  - Kamus leksikon mini      │
-│  - Logika posisi kata (S/O) │
-│  - Deteksi Echolalia/       │
-│    Repetisi                 │
-│  - Reduksi duplikasi label  │
-│  Output: S+P+O / Ket+S+P+O  │
-│          / Echolalia / dll. │
-└─────────────┬───────────────┘
+┌─────────────────────────────────────┐
+│ Tahap 2: Hybrid Parsing SPOK        │
+│  ┌─────────────────────────────┐    │
+│  │ 2a. spaCy (Dependency       │    │
+│  │     Parsing) — untuk        │    │
+│  │     visualisasi anotasi     │    │
+│  │  Model: id_core_news_sm     │    │
+│  └─────────────┬───────────────┘    │
+│                ▼                    │
+│  ┌─────────────────────────────┐    │
+│  │ 2b. Rule-based (Lexicon) —  │    │
+│  │     untuk feature ML        │    │
+│  │  Kamus mini + logika posisi │    │
+│  │  Output: S+P+O / Ket+S+P+O │    │
+│  └─────────────┬───────────────┘    │
+└─────────────────────────────────────┘
               │
               ▼
 ┌─────────────────────────────┐
@@ -91,7 +97,7 @@ Input Ujaran Anak
 
 ## Detail Tahapan
 
-### Tahap 1: Text Preprocessing (`app.py:19–23`)
+### Tahap 1: Text Preprocessing (`app.py:20–23`)
 
 | Langkah | Proses |
 |---|---|
@@ -99,9 +105,28 @@ Input Ujaran Anak
 | Cleaning | Hapus `[^a-z\s]` (angka, tanda baca, emoji) |
 | Whitespace | Normalisasi spasi berlebih |
 
-### Tahap 2: Auto-Parser Sintaksis (`app.py:31–93`)
+### Tahap 2: Hybrid Parsing SPOK
 
-#### Kamus Leksikon
+#### 2a. spaCy Dependency Parsing — untuk Visualisasi
+
+Menggunakan model **`id_core_news_sm`** (bahasa Indonesia) dari spaCy untuk dependency parsing akurat. Label Universal Dependencies di-map ke format SPOK:
+
+| spaCy `dep_` | Peran | Keterangan |
+|:---|:---|:---|
+| `nsubj`, `nsubj:pass` | **S** | Subjek kalimat |
+| `root`, `cop` | **P** | Predikat (root klausa) |
+| `obj`, `iobj` | **O** | Objek langsung/tidak langsung |
+| `obl`, `advmod`, `nmod` | **Ket** | Keterangan/adverbia |
+| `neg` | **Negasi** | Partikel negasi |
+| `det`, `case`, `aux`, `punct` | *(skip)* | Kata fungsi tidak dianotasi |
+
+**Fallback POS tagging** untuk label yang tidak dikenali: `NOUN/PROPN/PRON` sebelum predikat → S, setelah predikat → O; `VERB` → P; sisanya → Ket.
+
+#### 2b. Rule-based Parser — untuk Feature ML
+
+Parser berbasis kamus leksikon mini dan logika posisi kata (kiri ke kanan). Output tetap dipertahankan dalam format `S+P+O` yang konsisten dengan data training, sehingga **model ML tidak perlu retrain**.
+
+**Kamus Leksikon:**
 
 | Kategori | Kata Kunci |
 |---|---|
@@ -111,7 +136,7 @@ Input Ujaran Anak
 | **Predikat (P/O)** | `minta`, `makan`, `minum`, `lari`, `main`, `duduk`, `lihat`, `putar`, `tidur`, `mandi`, `siram`, `baca`, `pergi` |
 | **Nomina (S/O)** | `aku`, `saya`, `kamu`, `dia`, `mama`, `papa`, `anak`, `mobil`, `bunga`, `sepeda`, `kucing`, `susu`, `air`, `buku`, `kebun`, `binatang`, `ini`, `itu` |
 
-#### Aturan Parsing
+**Aturan Parsing:**
 
 1. **Echolalia**: Jika input `echolalia == "Ya"` → label `"Echolalia"`
 2. **Repetisi**: Jika token >= 2 dan `set(token)` hanya 1 unsur → label `"Repetisi"`
@@ -121,7 +146,7 @@ Input Ujaran Anak
 6. **Reduksi Duplikasi**: Deretan label identik berurutan digabung (contoh: `[Ket, Ket, Ket]` → `[Ket]`)
 7. **Output**: String dipisah `+`, contoh: `"S+P+O"`, `"Echolalia"`, `"Repetisi"`
 
-### Tahap 3a: Kompleksitas Kalimat (`app.py:98–107`)
+### Tahap 3a: Kompleksitas Kalimat (`app.py:106–115`)
 
 | Aturan | Hasil |
 |---|---|
@@ -130,7 +155,7 @@ Input Ujaran Anak
 | `+` muncul >= 3 kali | **Kalimat Majemuk (K4)** |
 | Selainnya (2 tanda `+`) | **Kalimat Sederhana (K3)** |
 
-### Tahap 3b: Intensi Komunikasi (`app.py:109–119`)
+### Tahap 3b: Intensi Komunikasi (`app.py:117–127`)
 
 | Aturan Kata Kunci | Intensi |
 |---|---|
@@ -139,7 +164,7 @@ Input Ujaran Anak
 | Konteks = instruksi ATAU mengandung `sudah`, `iya`, `belum` | **Answering** |
 | Default | **Commenting** |
 
-### Tahap 4: Prediksi Machine Learning (`app.py:344–397`, `model2.ipynb`)
+### Tahap 4: Prediksi Machine Learning (`app.py:411–478`, `model2.ipynb`)
 
 **Model**: Random Forest Classifier (100 trees, `random_state=42`, `class_weight='balanced'`)
 
@@ -161,7 +186,7 @@ Input Ujaran Anak
 - MLU <= 1 → `Belum Berkembang`
 - MLU > 1 → `Sudah Mahir`
 
-### Tahap 5: Kalkulator IKLA — DSM-5 (`app.py:128–152`)
+### Tahap 5: Kalkulator IKLA — DSM-5 (`app.py:132–155`)
 
 Skor total maksimal: **90**, terdiri dari 6 komponen:
 
@@ -174,6 +199,8 @@ Skor total maksimal: **90**, terdiri dari 6 komponen:
 | **Inisiasi** | 8 | Bermain/Bercerita = 8; Percakapan = 5; Deskripsi/Instruksi = 3 |
 | **ASD Level** | 10 | ASD-1 = 10; ASD-2 = 6; ASD-3 = 2 |
 
+**Opsi "Tidak tahu / Otomatis"**: Jika pengguna tidak mengetahui tingkat ASD anak, sistem menggunakan **ASD-2** sebagai default netral.
+
 #### Output Diagnosis DSM-5
 
 | Total Skor | Diagnosis |
@@ -182,7 +209,7 @@ Skor total maksimal: **90**, terdiri dari 6 komponen:
 | 31 – 60 | **Autisme Sedang (Level 2)** |
 | > 60 | **Autisme Ringan (Level 1)** |
 
-### Tahap 6: Sanity Check (`app.py:311–335`)
+### Tahap 6: Sanity Check (`app.py:330–354`)
 
 #### Validasi MLU vs Level Pemahaman
 
@@ -199,7 +226,7 @@ Jika prediksi ML tidak sesuai rentang MLU → koreksi paksa ke level yang sesuai
 - "Sudah Mahir" tapi IKLA <= 60 → turunkan ke "Berkembang Sedang"
 - "Berkembang Sedang" tapi IKLA <= 30 → turunkan ke "Belum Berkembang"
 
-### Tahap 7: Rekomendasi Terapis (`app.py:154–320`)
+### Tahap 7: Rekomendasi Terapis (`app.py:157–323`)
 
 #### Matriks Rekomendasi (3 level × 4 intensi = 12 skenario)
 
@@ -263,9 +290,13 @@ Dataset final (`data_final_siap_ml.csv`) memiliki **14 kolom** sebagai berikut:
 ├── label-real.py                   # Ekstraksi fitur dataset
 ├── model2.ipynb                    # Notebook training model Random Forest
 ├── model_sintaksis_real.pkl        # Model ML terlatih (Random Forest)
+├── model_autism_syntax_rf.pkl      # Model ML utama (Random Forest, TfidfVectorizer)
 ├── version.py                      # Cek versi pustaka
-├── requirements.txt                # Dependensi
+├── requirements.txt                # Dependensi Python
+├── runtime.txt                     # Versi Python untuk deployment
 ├── README.md                       # Dokumentasi sistem
+├── .streamlit/
+│   └── config.toml                 # Tema Fluent (Light, Blue #0078D4)
 ├── dataset/
 │   ├── data_real.csv               # Dataset mentah (9 kolom, 132 sampel)
 │   ├── data_real_lengkap.csv       # Setelah preprocessing + Kategori Pemahaman
@@ -280,11 +311,28 @@ Dataset final (`data_final_siap_ml.csv`) memiliki **14 kolom** sebagai berikut:
 | Komponen | Tools |
 |---|---|
 | **Framework** | Streamlit 1.58.0 |
+| **Syntactic Parsing (AI)** | spaCy 3.7.5 + `id_core_news_sm` (dependency parsing bahasa Indonesia) |
 | **Machine Learning** | scikit-learn 1.6.1 (Random Forest) |
-| **Data Processing** | pandas 3.0.2 |
-| **Model Serialization** | joblib 1.4.2 |
+| **Data Processing** | pandas 2.2.3 |
+| **Model Serialization** | joblib >= 1.3 |
 | **Text Processing** | regex (re) |
+| **Anotasi Warna** | st-annotated-text |
+| **Ikon** | Google Material Symbols |
+| **Tema** | Fluent Design (Light, Blue #0078D4, Open Sans) |
 | **Lingkungan** | Python 3.12 |
+| **Deployment** | Streamlit Cloud |
+
+---
+
+## Tampilan & Tema
+
+Aplikasi menggunakan tema **Fluent Design** (terinspirasi Windows 11) dengan:
+- **Warna primer**: Biru `#0078D4`
+- **Font**: Open Sans (body) + Fira Code (code)
+- **Base font size**: 16px untuk keterbacaan optimal
+- **Ikon**: Material Symbols untuk tombol, label, dan status
+
+File konfigurasi tema: `.streamlit/config.toml`
 
 ---
 
@@ -293,6 +341,9 @@ Dataset final (`data_final_siap_ml.csv`) memiliki **14 kolom** sebagai berikut:
 ```bash
 # Install dependencies
 pip install -r requirements.txt
+
+# Download model spaCy Indonesia
+python -m spacy download id_core_news_sm
 
 # Jalankan aplikasi
 streamlit run app.py
