@@ -57,12 +57,14 @@ def auto_parse_sintaksis(ujaran_bersih, echolalia):
             else:
                 pola_kasar.append("O")
         else:
-            if not has_predikat and "S" not in pola_kasar:
-                pola_kasar.append("S")
-            elif has_predikat:
-                pola_kasar.append("O")
+            if not has_predikat:
+                if "S" not in pola_kasar:
+                    pola_kasar.append("S")
+                else:
+                    pola_kasar.append("P")
+                    has_predikat = True
             else:
-                pola_kasar.append("Ket")
+                pola_kasar.append("O")
 
     pola_final = []
     for p in pola_kasar:
@@ -138,12 +140,14 @@ def parse_sintaksis_lanjutan(ujaran_bersih, echolalia):
             else:
                 token_roles.append("O")
         else:
-            if not has_predikat and "S" not in token_roles:
-                token_roles.append("S")
-            elif has_predikat:
-                token_roles.append("O")
+            if not has_predikat:
+                if "S" not in token_roles:
+                    token_roles.append("S")
+                else:
+                    token_roles.append("P")
+                    has_predikat = True
             else:
-                token_roles.append("Ket")
+                token_roles.append("O")
 
     pola_final = []
     for p in token_roles:
