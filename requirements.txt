@@ -1,5 +1,5 @@
-streamlit
+streamlit==1.58.0
 st-annotated-text
-joblib
-pandas
-scikit-learn
+joblib==1.4.2
+pandas==3.0.2
+scikit-learn==1.6.1
