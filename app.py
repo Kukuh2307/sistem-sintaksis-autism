@@ -461,7 +461,7 @@ with col_input:
     with st.container(border=True):
         # UI KINI SANGAT BERSIH! HANYA 4 INPUTAN.
         tingkat_asd_input = st.selectbox(":material/neurology: Perkiraan Tingkat ASD (jika sudah diketahui)", ["Tidak tahu / Otomatis", "ASD-1 (Ringan)", "ASD-2 (Sedang)", "ASD-3 (Berat)"])
-        konteks = st.selectbox(":material/dashboard: Konteks Interaksi", ["Bermain", "Percakapan", "Bercerita", "Deskripsi Gambar", "Instruksi"])
+        konteks = st.selectbox(":material/dashboard: Konteks Interaksi", ["Percakapan", "Bermain", "Bercerita", "Deskripsi Gambar", "Instruksi"])
         echolalia = st.radio(":material/record_voice_over: Terdeteksi Echolalia / Repetisi?", ["Tidak", "Ya"], horizontal=True)
 
         ujaran_anak = st.text_area(":material/edit_note: Teks Ujaran Anak", placeholder="Ketikkan ujaran anak di sini...", height=100)
