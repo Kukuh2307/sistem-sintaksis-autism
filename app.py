@@ -376,7 +376,7 @@ with col_input:
     
     with st.container(border=True):
         # UI KINI SANGAT BERSIH! HANYA 4 INPUTAN.
-        tingkat_asd_input = st.selectbox(":material/neurology: Baseline Tingkat ASD Klien", ["ASD-1", "ASD-2", "ASD-3"])
+        tingkat_asd_input = st.selectbox(":material/neurology: Perkiraan Tingkat ASD (jika sudah diketahui)", ["Tidak tahu / Otomatis", "ASD-1 (Ringan)", "ASD-2 (Sedang)", "ASD-3 (Berat)"])
         konteks = st.selectbox(":material/dashboard: Konteks Interaksi", ["Bermain", "Percakapan", "Bercerita", "Deskripsi Gambar", "Instruksi"])
         echolalia = st.radio(":material/record_voice_over: Terdeteksi Echolalia / Repetisi?", ["Tidak", "Ya"], horizontal=True)
 
@@ -400,11 +400,19 @@ with col_output:
             kompleksitas_kalimat = tentukan_kompleksitas(struktur_sintaksis_otomatis)
             intensi_komunikasi = tentukan_intensi(ujaran_bersih, konteks)
             
+            # Default ASD jika user memilih "Tidak tahu"
+            asd_auto_default = False
+            if tingkat_asd_input.startswith("Tidak tahu"):
+                tingkat_asd = "ASD-2"
+                asd_auto_default = True
+            else:
+                tingkat_asd = tingkat_asd_input.split(" ")[0]
+            
             # 2. Prediksi ML
             if model_ready:
                 data_input_ml = pd.DataFrame([{
                     'Ujaran Bersih': ujaran_bersih,
-                    'ASD': tingkat_asd_input,
+                    'ASD': tingkat_asd,
                     'Echolalia': echolalia,
                     'Struktur Sintaksis': struktur_sintaksis_otomatis,
                     'Kompleksitas Kalimat': kompleksitas_kalimat,
@@ -416,7 +424,7 @@ with col_output:
                 prediksi_pemahaman = "Belum Berkembang" if mlu_hitung <= 1 else "Sudah Mahir"
                 
             # 3. Kalkulator IKLA & Rekomendasi
-            skor_ikla, label_diagnosis, rincian_skor = hitung_ikla(mlu_hitung, kompleksitas_kalimat, intensi_komunikasi, echolalia, konteks, mlu_hitung, tingkat_asd_input)
+            skor_ikla, label_diagnosis, rincian_skor = hitung_ikla(mlu_hitung, kompleksitas_kalimat, intensi_komunikasi, echolalia, konteks, mlu_hitung, tingkat_asd)
 
             # Sanity check: filter validasi antara prediksi MLU & IKLA
             prediksi_pemahaman, warning_sanity = sanity_check_prediksi(prediksi_pemahaman, mlu_hitung, skor_ikla)
@@ -427,6 +435,8 @@ with col_output:
             # Menampilkan Output
             # st.success("Analisis Selesai!")
             st.toast("Analisis Selesai!", icon=":material/check_circle:")
+            if asd_auto_default:
+                st.caption(":material/auto_fix: Tingkat ASD tidak diisi. Sistem menggunakan ASD-2 (Sedang) sebagai default.")
 
             
             # 1. Output Syntactic Parsing (Otomatis) dengan Anotasi
