@@ -4,25 +4,6 @@ import re
 import joblib
 import os
 from annotated_text import annotated_text
-import spacy
-
-# ==========================================
-# LOAD SPACY MODEL
-# ==========================================
-@st.cache_resource
-def load_spacy_nlp():
-    try:
-        return spacy.load("id_core_news_sm")
-    except OSError:
-        try:
-            spacy.cli.download("id_core_news_sm")
-            return spacy.load("id_core_news_sm")
-        except Exception:
-            return None
-
-nlp = load_spacy_nlp()
-if nlp is None:
-    st.warning("Model bahasa Indonesia (id_core_news_sm) gagal dimuat. Parser AI tidak tersedia.")
 
 # ==========================================
 # CONFIGURATION & PAGE SETUP
@@ -120,43 +101,87 @@ def auto_parse_sintaksis(ujaran_bersih, echolalia):
     return ("+".join(pola_final) if pola_final else "Tidak Teridentifikasi"), pola_kasar
 
 # ==========================================
-# 2b. TAHAP PARSER SPACY (AI AKURAT)
+# 2b. TAHAP PARSER LANJUTAN (LEKSIKON DIPERLUAS)
 # ==========================================
-MAP_SPACY_ROLE = {
-    "nsubj": "S", "nsubj:pass": "S",
-    "root": "P", "cop": "P",
-    "obj": "O", "iobj": "O",
-    "obl": "Ket", "advmod": "Ket", "nmod": "Ket", "obl:prep": "Ket",
-    "neg": "Negasi",
-}
+KATA_VERBA = [
+    'angkat', 'ambil', 'baca', 'bawa', 'beli', 'beri', 'buat', 'buka',
+    'cuci', 'duduk', 'ganti', 'habis', 'hitung', 'ikut', 'jatuh', 'jemput',
+    'jual', 'kasih', 'lari', 'lempar', 'lihat', 'lukis', 'main', 'makan', 'mandi',
+    'masak', 'minum', 'minta', 'naik', 'pakai', 'panggil', 'pegang', 'pergi',
+    'pukul', 'pulang', 'putar', 'robek', 'rusak', 'simpan', 'siram', 'taruh',
+    'tendang', 'tidur', 'tulis', 'tusuk', 'tutup',
+]
 
-SKIP_DEP = {"det", "case", "aux", "mark", "punct", "cc", "expl", "acl"}
+KATA_NOMINA = [
+    'adik', 'air', 'aku', 'anak', 'ayah', 'baju', 'balon', 'batang',
+    'benda', 'beras', 'bibi', 'binatang', 'biskuit', 'bola', 'boneka',
+    'botol', 'buku', 'bunga', 'celana', 'dia', 'dompet', 'gelas',
+    'handuk', 'ibu', 'ikat', 'ini', 'itu', 'jendela', 'kakak', 'kalung',
+    'kamar', 'kamu', 'kebun', 'kemeja', 'kereta', 'kertas', 'kipas',
+    'komik', 'kotak', 'krayon', 'kucing', 'kursi', 'lampu', 'layar',
+    'lemari', 'lilin', 'mama', 'meja', 'mobil', 'motor', 'paman',
+    'papa', 'papan', 'payung', 'pensil', 'piring', 'radio', 'sapu',
+    'saya', 'selimut', 'semangka', 'sendok', 'sepeda', 'sepatu', 'sisir',
+    'spidol', 'sumpit', 'susu', 'tali', 'tamu', 'tangga', 'tape',
+    'televisi', 'tenda', 'topi',
+]
 
-def parse_spacy_spok(ujaran_bersih):
-    if nlp is None:
-        return "Tidak Teridentifikasi", []
-    doc = nlp(ujaran_bersih)
+KATA_KET = [
+    'baru', 'bersama', 'besok', 'belum', 'cepat', 'cukup', 'dekat',
+    'di', 'dari', 'dulu', 'hampir', 'hanya', 'jarang', 'kadang',
+    'ke', 'kemarin', 'nanti', 'pagi', 'sana', 'sangat', 'sekarang', 'selalu',
+    'sedang', 'sering', 'sini', 'sore', 'sudah', 'tetap', 'tadi',
+    'terlalu', 'epat',
+]
+
+KATA_NEGASI = ['tidak', 'bukan', 'jangan', 'belum', 'tak', 'tiada']
+KATA_MODAL = ['mau', 'ingin', 'bisa', 'dapat', 'harus', 'akan']
+
+def parse_sintaksis_lanjutan(ujaran_bersih, echolalia):
+    token = ujaran_bersih.split()
+    if echolalia == "Ya":
+        return "Echolalia", ["Echolalia"] * len(token)
+    if len(token) >= 2 and len(set(token)) == 1:
+        return "Repetisi", ["Repetisi"] * len(token)
+
     token_roles = []
-    for token in doc:
-        dep = token.dep_
-        if dep in SKIP_DEP:
+    has_predikat = False
+    is_ket_phrase = False
+
+    for kata in token:
+        if is_ket_phrase:
+            token_roles.append("Ket")
             continue
-        role = MAP_SPACY_ROLE.get(dep)
-        if role is None:
-            pos = token.pos_
-            if pos in ("NOUN", "PROPN", "PRON") and "S" not in token_roles:
-                role = "S"
-            elif pos in ("VERB", "AUX"):
-                role = "P"
-            elif pos in ("NOUN", "PROPN", "PRON"):
-                role = "O"
+        if kata in KATA_NEGASI:
+            token_roles.append("Negasi")
+        elif kata in KATA_KET:
+            token_roles.append("Ket")
+            if kata in ('di', 'ke', 'dari'):
+                is_ket_phrase = True
+        elif kata in KATA_MODAL:
+            token_roles.append("P")
+            has_predikat = True
+        elif kata in KATA_VERBA:
+            token_roles.append("P")
+            has_predikat = True
+        elif kata in KATA_NOMINA:
+            if not has_predikat and ("S" not in token_roles or token_roles[-1] == "S"):
+                token_roles.append("S")
             else:
-                role = "Ket"
-        token_roles.append(role)
+                token_roles.append("O")
+        else:
+            if not has_predikat and "S" not in token_roles:
+                token_roles.append("S")
+            elif has_predikat:
+                token_roles.append("O")
+            else:
+                token_roles.append("Ket")
+
     pola_final = []
     for p in token_roles:
         if not pola_final or pola_final[-1] != p:
             pola_final.append(p)
+
     return ("+".join(pola_final) if pola_final else "Tidak Teridentifikasi"), token_roles
 
 # ==========================================
@@ -456,11 +481,8 @@ with col_output:
             # PARSER OTOMATIS (RULE-BASED) — untuk ML
             struktur_sintaksis_otomatis, pola_per_token = auto_parse_sintaksis(ujaran_bersih, echolalia)
             
-            # PARSER SPACY (AI) — untuk visualisasi
-            try:
-                struktur_spacy, pola_spacy = parse_spacy_spok(ujaran_bersih)
-            except Exception:
-                struktur_spacy, pola_spacy = struktur_sintaksis_otomatis, pola_per_token
+            # PARSER LANJUTAN (LEKSIKON DIPERLUAS) — untuk visualisasi
+            struktur_lanjutan, pola_lanjutan = parse_sintaksis_lanjutan(ujaran_bersih, echolalia)
             
             kompleksitas_kalimat = tentukan_kompleksitas(struktur_sintaksis_otomatis)
             intensi_komunikasi = tentukan_intensi(ujaran_bersih, konteks)
@@ -515,19 +537,19 @@ with col_output:
                 "Repetisi": ("#6B7280", "white"),
             }
 
-            st.subheader(":material/syntax: 1. Pembedahan Sintaksis (AI-Parser)")
+            st.subheader(":material/syntax: 1. Pembedahan Sintaksis (Parser)")
 
-            if pola_spacy and len(pola_spacy) == len(token_list):
+            if pola_lanjutan and len(pola_lanjutan) == len(token_list):
                 annotated_args = []
                 for i, kata in enumerate(token_list):
-                    role = pola_spacy[i]
+                    role = pola_lanjutan[i]
                     bg, fg = WARNA_ROLE.get(role, ("#E5E7EB", "#111827"))
                     annotated_args.append((kata, role, bg, fg))
                     if i < len(token_list) - 1:
                         annotated_args.append(" ")
                 annotated_text(*annotated_args)
-            elif struktur_spacy in ("Echolalia", "Repetisi"):
-                label = struktur_spacy
+            elif struktur_lanjutan in ("Echolalia", "Repetisi"):
+                label = struktur_lanjutan
                 bg, fg = WARNA_ROLE.get(label, ("#6B7280", "white"))
                 annotated_args = []
                 for i, kata in enumerate(token_list):
@@ -536,9 +558,9 @@ with col_output:
                         annotated_args.append(" ")
                 annotated_text(*annotated_args)
             else:
-                st.code(f"Pola: {struktur_spacy}", language="markdown")
+                st.code(f"Pola: {struktur_lanjutan}", language="markdown")
 
-            st.caption(f"**Pola AI:** {struktur_spacy}  |  **Pola ML:** {struktur_sintaksis_otomatis}  |  **Kompleksitas:** {kompleksitas_kalimat}  |  **MLU:** {mlu_hitung} kata")
+            st.caption(f"**Pola:** {struktur_lanjutan}  |  **Kompleksitas:** {kompleksitas_kalimat}  |  **MLU:** {mlu_hitung} kata")
             
             # 2. Output Pemahaman & Pragmatik
             st.subheader("2. Prediksi Kognitif & Pragmatik")
