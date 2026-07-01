@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 
@@ -7,12 +8,13 @@ st.caption("Eksplorasi seluruh data ujaran anak dengan ASD")
 DATA_PATH = "dataset/dataset.csv"
 
 @st.cache_data
-def load_dataset():
+def load_dataset(_mtime):
     df = pd.read_csv(DATA_PATH, sep=";")
     df.fillna("Tidak Diketahui", inplace=True)
     return df
 
-df = load_dataset()
+mtime = os.path.getmtime(DATA_PATH) if os.path.exists(DATA_PATH) else 0
+df = load_dataset(mtime)
 
 total_samples = len(df)
 total_children = df["ID Anak"].nunique()

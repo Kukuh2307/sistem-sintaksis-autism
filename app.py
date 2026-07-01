@@ -8,15 +8,18 @@ st.set_page_config(
     layout="wide"
 )
 
+MODEL_PATH = 'model_autism_syntax_rf.pkl'
+
 @st.cache_resource
-def _load_model():
-    model_path = 'model_autism_syntax_rf.pkl'
-    if os.path.exists(model_path):
-        return joblib.load(model_path)
+def _load_model(_mtime):
+    if os.path.exists(MODEL_PATH):
+        return joblib.load(MODEL_PATH)
     return None
 
-if "model" not in st.session_state:
-    m = _load_model()
+mtime = os.path.getmtime(MODEL_PATH) if os.path.exists(MODEL_PATH) else 0
+if "model" not in st.session_state or st.session_state.get("_mtime") != mtime:
+    st.session_state._mtime = mtime
+    m = _load_model(mtime)
     st.session_state.model = m
     st.session_state.model_ready = m is not None
 

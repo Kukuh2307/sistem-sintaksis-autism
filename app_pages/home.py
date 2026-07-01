@@ -2,6 +2,16 @@ import streamlit as st
 import pandas as pd
 import re
 from annotated_text import annotated_text
+from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
+
+_stemmer = None
+def _get_stemmer():
+    global _stemmer
+    if _stemmer is None:
+        _stemmer = StemmerFactory().create_stemmer()
+    return _stemmer
+
+PRONOUN_SUBJECT = {'aku', 'saya', 'kamu', 'dia', 'mama', 'papa'}
 
 st.title("ATLAS (Automated Text & Language Assessment System)")
 st.caption("Sistem Hibrida Komputasional Linguistik & Pendukung Keputusan")
@@ -15,12 +25,16 @@ def proses_teks_sintaksis(teks):
     teks = re.sub(r'\s+', ' ', teks).strip()
     return teks
 
-def auto_parse_sintaksis(ujaran_bersih, echolalia):
+def auto_parse_sintaksis(ujaran_bersih):
     token = ujaran_bersih.split()
-    if echolalia == "Ya":
+    if len(token) >= 4 and len(token) % 2 == 0 and token[:len(token)//2] == token[len(token)//2:]:
         return "Echolalia", []
     if len(token) >= 2 and len(set(token)) == 1:
         return "Repetisi", []
+    if len(token) >= 3 and any(token[i] == token[i+1] for i in range(len(token)-1)):
+        return "Repetisi", []
+
+    stemmer = _get_stemmer()
 
     kata_negasi = ['tidak', 'bukan', 'jangan', 'belum']
     kata_ket = ['kemarin', 'besok', 'tadi', 'sekarang', 'sore', 'pagi', 'sangat', 'cepat', 'di', 'ke', 'dari', 'sini', 'sana', 'epat']
@@ -28,32 +42,46 @@ def auto_parse_sintaksis(ujaran_bersih, echolalia):
     kata_predikat = ['minta', 'makan', 'minum', 'lari', 'main', 'duduk', 'lihat', 'putar', 'tidur', 'mandi', 'siram', 'baca', 'pergi']
     kata_nomina = ['aku', 'saya', 'kamu', 'dia', 'mama', 'papa', 'anak', 'mobil', 'bunga', 'sepeda', 'kucing', 'susu', 'air', 'buku', 'kebun', 'binatang', 'ini', 'itu']
 
+    all_known = set(kata_negasi + kata_ket + kata_modal + kata_predikat + kata_nomina)
+    if all(stemmer.stem(t) not in all_known for t in token):
+        return "Neologisme", []
+
     pola_kasar = []
     has_predikat = False
     is_ket_phrase = False
 
     for kata in token:
+        stem = stemmer.stem(kata)
         if is_ket_phrase:
             pola_kasar.append("Ket")
             continue
-        if kata in kata_negasi:
+        if stem in kata_negasi:
             pola_kasar.append("Negasi")
-        elif kata in kata_ket:
+        elif stem in kata_ket:
             pola_kasar.append("Ket")
-            if kata in ['di', 'ke', 'dari']:
+            if stem in ['di', 'ke', 'dari']:
                 is_ket_phrase = True
-        elif kata in kata_modal:
+        elif stem in kata_modal:
             pola_kasar.append("P")
             has_predikat = True
-        elif kata in kata_predikat:
+        elif stem in kata_predikat:
             if has_predikat:
                 pola_kasar.append("O")
             else:
                 pola_kasar.append("P")
                 has_predikat = True
-        elif kata in kata_nomina:
-            if not has_predikat:
+        elif stem in PRONOUN_SUBJECT:
+            if "S" not in pola_kasar:
                 pola_kasar.append("S")
+            else:
+                pola_kasar.append("O")
+        elif stem in kata_nomina:
+            if not has_predikat:
+                if "S" not in pola_kasar:
+                    pola_kasar.append("S")
+                else:
+                    pola_kasar.append("P")
+                    has_predikat = True
             else:
                 pola_kasar.append("O")
         else:
@@ -107,34 +135,48 @@ KATA_KET = [
 KATA_NEGASI = ['tidak', 'bukan', 'jangan', 'belum', 'tak', 'tiada']
 KATA_MODAL = ['mau', 'ingin', 'bisa', 'dapat', 'harus', 'akan']
 
-def parse_sintaksis_lanjutan(ujaran_bersih, echolalia):
+def parse_sintaksis_lanjutan(ujaran_bersih):
     token = ujaran_bersih.split()
-    if echolalia == "Ya":
+    if len(token) >= 4 and len(token) % 2 == 0 and token[:len(token)//2] == token[len(token)//2:]:
         return "Echolalia", ["Echolalia"] * len(token)
     if len(token) >= 2 and len(set(token)) == 1:
         return "Repetisi", ["Repetisi"] * len(token)
+    if len(token) >= 3 and any(token[i] == token[i+1] for i in range(len(token)-1)):
+        return "Repetisi", ["Repetisi"] * len(token)
+
+    stemmer = _get_stemmer()
+
+    all_known = set(KATA_VERBA + KATA_NOMINA + KATA_KET + KATA_NEGASI + KATA_MODAL)
+    if all(stemmer.stem(t) not in all_known for t in token):
+        return "Neologisme", ["Neologisme"] * len(token)
 
     token_roles = []
     has_predikat = False
     is_ket_phrase = False
 
     for kata in token:
+        stem = stemmer.stem(kata)
         if is_ket_phrase:
             token_roles.append("Ket")
             continue
-        if kata in KATA_NEGASI:
+        if stem in KATA_NEGASI:
             token_roles.append("Negasi")
-        elif kata in KATA_KET:
+        elif stem in KATA_KET:
             token_roles.append("Ket")
-            if kata in ('di', 'ke', 'dari'):
+            if stem in ('di', 'ke', 'dari'):
                 is_ket_phrase = True
-        elif kata in KATA_MODAL:
+        elif stem in KATA_MODAL:
             token_roles.append("P")
             has_predikat = True
-        elif kata in KATA_VERBA:
+        elif stem in KATA_VERBA:
             token_roles.append("P")
             has_predikat = True
-        elif kata in KATA_NOMINA:
+        elif stem in PRONOUN_SUBJECT:
+            if "S" not in token_roles:
+                token_roles.append("S")
+            else:
+                token_roles.append("O")
+        elif stem in KATA_NOMINA:
             if not has_predikat and ("S" not in token_roles or token_roles[-1] == "S"):
                 token_roles.append("S")
             else:
@@ -158,7 +200,7 @@ def parse_sintaksis_lanjutan(ujaran_bersih, echolalia):
 
 def tentukan_kompleksitas(struktur_sintaksis):
     struktur = str(struktur_sintaksis).strip().lower()
-    if '+' not in struktur or struktur in ['echolalia', 'repetisi', 'negasi', 'tidak teridentifikasi']:
+    if '+' not in struktur or struktur in ['echolalia', 'repetisi', 'negasi', 'tidak teridentifikasi', 'neologisme']:
         return 'Kata Tunggal (K1)'
     elif struktur.count('+') == 1:
         return 'Frasa (K2)'
@@ -166,6 +208,18 @@ def tentukan_kompleksitas(struktur_sintaksis):
         return 'Kalimat Majemuk (K4)'
     else:
         return 'Kalimat Sederhana (K3)'
+
+def deteksi_abnormal_order(token_roles):
+    if not token_roles or len(token_roles) < 2:
+        return False
+    p_idx = None
+    s_idx = None
+    for i, r in enumerate(token_roles):
+        if r == "P" and p_idx is None:
+            p_idx = i
+        if r == "S" and s_idx is None:
+            s_idx = i
+    return p_idx is not None and s_idx is not None and p_idx < s_idx
 
 def tentukan_intensi(ujaran, konteks):
     ujaran = str(ujaran).strip().lower()
@@ -179,15 +233,38 @@ def tentukan_intensi(ujaran, konteks):
     else:
         return 'Commenting'
 
-def hitung_ikla(mlu, kompleksitas, intensi, echolalia, konteks, token_len, tingkat_asd):
-    skor_sintaksis = 24 if (kompleksitas == 'Kalimat Majemuk (K4)' or (kompleksitas == 'Kalimat Sederhana (K3)' and mlu >= 3)) else (16 if kompleksitas == 'Frasa (K2)' or mlu == 2 else 8)
-    skor_leksikal = 16 if token_len > 3 else (10 if token_len >= 2 else 5)
+def hitung_ikla(mlu, kompleksitas, intensi, echolalia, konteks, token_len, tingkat_asd, is_neologism=False, is_abnormal_order=False, is_repetition=False):
+    if kompleksitas == 'Kata Tunggal (K1)':
+        skor_sintaksis = 8
+    elif kompleksitas == 'Frasa (K2)' or kompleksitas == 'Kalimat Sederhana (K3)' and mlu == 2:
+        skor_sintaksis = 16
+    elif kompleksitas == 'Kalimat Majemuk (K4)' or kompleksitas == 'Kalimat Sederhana (K3)' and mlu >= 3:
+        skor_sintaksis = 24
+    else:
+        skor_sintaksis = 8
+
+    if is_neologism:
+        skor_sintaksis = 2
+        skor_leksikal = 5
+    elif is_abnormal_order:
+        skor_sintaksis = max(2, skor_sintaksis // 2)
+        skor_leksikal = 16 if token_len > 3 else (10 if token_len >= 2 else 5)
+    else:
+        skor_leksikal = 16 if token_len > 3 else (10 if token_len >= 2 else 5)
+
     skor_pragmatik = 20 if intensi in ['Commenting', 'Answering'] else (13 if intensi == 'Requesting' else 9)
     skor_echo = 12 if echolalia == 'Tidak' else 3
     skor_inisiasi = 8 if konteks in ['Bermain', 'Bercerita'] else (5 if konteks == 'Percakapan' else 3)
     skor_asd = 10 if tingkat_asd == 'ASD-1' else (6 if tingkat_asd == 'ASD-2' else 2)
 
     total_skor = skor_sintaksis + skor_leksikal + skor_pragmatik + skor_echo + skor_inisiasi + skor_asd
+
+    if is_neologism:
+        total_skor = min(total_skor, 30)
+    if is_repetition and tingkat_asd == "ASD-3":
+        total_skor = min(total_skor, 30)
+    if is_abnormal_order:
+        total_skor = min(total_skor, 60)
 
     if total_skor <= 30:
         level_asd = "Autisme Berat (DSM-5 Level 3)"
@@ -372,31 +449,38 @@ def gen_rekomendasi_tambahan(rincian_skor, mlu, echolalia):
 
     return hasil
 
-def sanity_check_prediksi(prediksi, mlu, skor_ikla):
-    korreksi = prediksi
-    alasan = None
+def sanity_check_prediksi(prediksi_pemahaman, prediksi_asd, mlu, skor_ikla):
+    korreksi_p = prediksi_pemahaman
+    korreksi_a = prediksi_asd
+    alasan = []
 
-    batas_mlu = {
+    batas_mlu_p = {
         "Belum Berkembang": (0, 1),
         "Berkembang Sedang": (2, 3),
         "Sudah Mahir": (4, float("inf")),
     }
-
-    for level, (min_kata, max_kata) in batas_mlu.items():
+    for level, (min_kata, max_kata) in batas_mlu_p.items():
         if min_kata <= mlu <= max_kata:
-            if prediksi != level:
-                korreksi = level
-                alasan = f"MLU ({mlu} kata) terlalu rendah untuk '{prediksi}', disesuaikan ke '{level}'"
+            if prediksi_pemahaman != level:
+                korreksi_p = level
+                alasan.append(f"MLU ({mlu}) tidak sesuai untuk '{prediksi_pemahaman}', dikoreksi ke '{level}'")
             break
 
-    if korreksi == "Sudah Mahir" and skor_ikla <= 60:
-        korreksi = "Berkembang Sedang"
-        alasan = f"Skor IKLA ({skor_ikla}) tidak mendukung 'Sudah Mahir', disesuaikan ke 'Berkembang Sedang'"
-    elif korreksi == "Berkembang Sedang" and skor_ikla <= 30:
-        korreksi = "Belum Berkembang"
-        alasan = f"Skor IKLA ({skor_ikla}) tidak mendukung 'Berkembang Sedang', disesuaikan ke 'Belum Berkembang'"
+    if mlu <= 1 and prediksi_asd == "ASD-1":
+        korreksi_a = "ASD-2"
+        alasan.append(f"MLU ({mlu}) terlalu rendah untuk ASD-1, dikoreksi ke ASD-2")
+    elif mlu >= 4 and prediksi_asd == "ASD-3":
+        korreksi_a = "ASD-2"
+        alasan.append(f"MLU ({mlu}) terlalu tinggi untuk ASD-3, dikoreksi ke ASD-2")
 
-    return korreksi, alasan
+    if korreksi_p == "Sudah Mahir" and skor_ikla <= 60:
+        korreksi_p = "Berkembang Sedang"
+        alasan.append(f"Skor IKLA ({skor_ikla}) tidak mendukung 'Sudah Mahir', dikoreksi ke 'Berkembang Sedang'")
+    elif korreksi_p == "Berkembang Sedang" and skor_ikla <= 30:
+        korreksi_p = "Belum Berkembang"
+        alasan.append(f"Skor IKLA ({skor_ikla}) tidak mendukung 'Berkembang Sedang', dikoreksi ke 'Belum Berkembang'")
+
+    return korreksi_p, korreksi_a, "; ".join(alasan) if alasan else None
 
 col_input, col_output = st.columns([1, 1.5])
 
@@ -405,9 +489,7 @@ with col_input:
     st.caption("Input disederhanakan hanya pada parameter klinis yang wajib.")
 
     with st.container(border=True):
-        tingkat_asd_input = st.selectbox(":material/neurology: Perkiraan Tingkat ASD (jika sudah diketahui)", ["Tidak tahu / Otomatis", "ASD-1 (Ringan)", "ASD-2 (Sedang)", "ASD-3 (Berat)"])
         konteks = st.selectbox(":material/dashboard: Konteks Interaksi", ["Percakapan", "Bermain", "Bercerita", "Deskripsi Gambar", "Instruksi"])
-        echolalia = st.radio(":material/record_voice_over: Terdeteksi Echolalia / Repetisi?", ["Tidak", "Ya"], horizontal=True)
 
         ujaran_anak = st.text_area(":material/edit_note: Teks Ujaran Anak", placeholder="Ketikkan ujaran anak di sini...", height=100)
 
@@ -422,44 +504,47 @@ with col_output:
             token_list = ujaran_bersih.split()
             mlu_hitung = len(token_list)
 
-            struktur_sintaksis_otomatis, pola_per_token = auto_parse_sintaksis(ujaran_bersih, echolalia)
+            struktur_sintaksis_otomatis, pola_per_token = auto_parse_sintaksis(ujaran_bersih)
 
-            struktur_lanjutan, pola_lanjutan = parse_sintaksis_lanjutan(ujaran_bersih, echolalia)
+            struktur_lanjutan, pola_lanjutan = parse_sintaksis_lanjutan(ujaran_bersih)
 
             kompleksitas_kalimat = tentukan_kompleksitas(struktur_sintaksis_otomatis)
             intensi_komunikasi = tentukan_intensi(ujaran_bersih, konteks)
 
-            asd_auto_default = False
-            if tingkat_asd_input.startswith("Tidak tahu"):
-                tingkat_asd = "ASD-2"
-                asd_auto_default = True
-            else:
-                tingkat_asd = tingkat_asd_input.split(" ")[0]
+            is_neologism = struktur_sintaksis_otomatis == "Neologisme"
+            is_abnormal_order = deteksi_abnormal_order(pola_lanjutan)
+            is_repetition = struktur_lanjutan == "Repetisi"
+            is_echolalia = struktur_lanjutan == "Echolalia"
+            echolalia_efektif = "Ya" if (is_repetition or is_echolalia) else "Tidak"
 
             if model_ready and model_ai is not None:
                 data_input_ml = pd.DataFrame([{
                     'Ujaran Bersih': ujaran_bersih,
-                    'ASD': tingkat_asd,
-                    'Echolalia': echolalia,
+                    'Echolalia': echolalia_efektif,
                     'Struktur Sintaksis': struktur_sintaksis_otomatis,
                     'Kompleksitas Kalimat': kompleksitas_kalimat,
                     'Intensi Komunikasi': intensi_komunikasi,
                     'MLU': mlu_hitung
                 }])
-                prediksi_pemahaman = model_ai.predict(data_input_ml)[0]
+                preds = model_ai.predict(data_input_ml)
+                prediksi_pemahaman = preds[0][0]
+                prediksi_asd = preds[0][1]
             else:
                 prediksi_pemahaman = "Belum Berkembang" if mlu_hitung <= 1 else "Sudah Mahir"
+                prediksi_asd = "ASD-3" if mlu_hitung <= 1 else "ASD-1"
 
-            skor_ikla, label_diagnosis, rincian_skor = hitung_ikla(mlu_hitung, kompleksitas_kalimat, intensi_komunikasi, echolalia, konteks, mlu_hitung, tingkat_asd)
+            if is_abnormal_order or is_repetition:
+                prediksi_pemahaman = "Belum Berkembang"
+                prediksi_asd = "ASD-3"
 
-            prediksi_pemahaman, warning_sanity = sanity_check_prediksi(prediksi_pemahaman, mlu_hitung, skor_ikla)
+            skor_ikla, label_diagnosis, rincian_skor = hitung_ikla(mlu_hitung, kompleksitas_kalimat, intensi_komunikasi, echolalia_efektif, konteks, mlu_hitung, prediksi_asd, is_neologism=is_neologism, is_abnormal_order=is_abnormal_order, is_repetition=is_repetition)
+
+            prediksi_pemahaman, prediksi_asd, warning_sanity = sanity_check_prediksi(prediksi_pemahaman, prediksi_asd, mlu_hitung, skor_ikla)
 
             rekomendasi_utama = KAMUS_REKOMENDASI.get(prediksi_pemahaman, {}).get(intensi_komunikasi, None)
-            rekomendasi_tambahan = gen_rekomendasi_tambahan(rincian_skor, mlu_hitung, echolalia)
+            rekomendasi_tambahan = gen_rekomendasi_tambahan(rincian_skor, mlu_hitung, echolalia_efektif)
 
             st.toast("Analisis Selesai!", icon=":material/check_circle:")
-            if asd_auto_default:
-                st.caption(":material/auto_fix: Tingkat ASD tidak diisi. Sistem menggunakan ASD-2 (Sedang) sebagai default.")
 
             WARNA_ROLE = {
                 "S": ("#3B82F6", "white"),
@@ -469,6 +554,7 @@ with col_output:
                 "Negasi": ("#EF4444", "white"),
                 "Echolalia": ("#6B7280", "white"),
                 "Repetisi": ("#6B7280", "white"),
+                "Neologisme": ("#9B59B6", "white"),
             }
 
             st.subheader("1. Pembedahan Sintaksis (Parser)")
@@ -482,7 +568,7 @@ with col_output:
                     if i < len(token_list) - 1:
                         annotated_args.append(" ")
                 annotated_text(*annotated_args)
-            elif struktur_lanjutan in ("Echolalia", "Repetisi"):
+            elif struktur_lanjutan in ("Echolalia", "Repetisi", "Neologisme"):
                 label = struktur_lanjutan
                 bg, fg = WARNA_ROLE.get(label, ("#6B7280", "white"))
                 annotated_args = []
@@ -495,11 +581,14 @@ with col_output:
                 st.code(f"Pola: {struktur_lanjutan}", language="markdown")
 
             st.caption(f"**Pola:** {struktur_lanjutan}  |  **Kompleksitas:** {kompleksitas_kalimat}  |  **MLU:** {mlu_hitung} kata")
+            if is_echolalia:
+                st.caption(":material/record_voice_over: **Echolalia terdeteksi** — Pola pengulangan frasa (ABAB) teridentifikasi secara otomatis.")
 
             st.subheader("2. Prediksi Kognitif & Pragmatik")
-            c1, c2 = st.columns(2)
+            c1, c2, c3 = st.columns(3)
             c1.info(f"**Pemahaman:** {prediksi_pemahaman}", icon=":material/psychology:")
-            c2.info(f"**Intensi:** {intensi_komunikasi}", icon=":material/chat:")
+            c2.info(f"**ASD:** {prediksi_asd}", icon=":material/neurology:")
+            c3.info(f"**Intensi:** {intensi_komunikasi}", icon=":material/chat:")
             if warning_sanity:
                 st.caption(f":material/tune: Sanity check: {warning_sanity}")
 
@@ -565,7 +654,7 @@ with col_output:
                         with st.expander(f":material/warning: {label}{skor_str}"):
                             st.write(teks)
 
-        if echolalia == "Ya":
+        if echolalia_efektif == "Ya":
             st.error("Catatan Klinis: Terapkan intervensi potong-rantai untuk mengatasi repetisi Echolalia.", icon=":material/medical_services:")
 
     elif tombol_analisis and not ujaran_anak:
