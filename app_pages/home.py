@@ -52,6 +52,7 @@ def auto_parse_sintaksis(ujaran_bersih):
         stem = stemmer.stem(kata)
         if is_ket_phrase:
             pola_kasar.append("Ket")
+            is_ket_phrase = False
             continue
         if stem in kata_negasi:
             pola_kasar.append("Negasi")
@@ -154,6 +155,7 @@ def parse_sintaksis_lanjutan(ujaran_bersih):
         stem = stemmer.stem(kata)
         if is_ket_phrase:
             token_roles.append("Ket")
+            is_ket_phrase = False
             continue
         if stem in KATA_NEGASI:
             token_roles.append("Negasi")
@@ -217,6 +219,11 @@ def deteksi_abnormal_order(token_roles):
             s_idx = i
     return p_idx is not None and s_idx is not None and p_idx < s_idx
 
+def deteksi_missing_subject(token_roles, mlu):
+    if mlu < 3:
+        return False
+    return "S" not in token_roles and "P" in token_roles
+
 def tentukan_intensi(ujaran, konteks):
     ujaran = str(ujaran).strip().lower()
     konteks = str(konteks).strip().lower()
@@ -229,7 +236,7 @@ def tentukan_intensi(ujaran, konteks):
     else:
         return 'Commenting'
 
-def hitung_ikla(mlu, kompleksitas, intensi, echolalia, konteks, token_len, tingkat_asd, is_neologism=False, is_abnormal_order=False, is_repetition=False):
+def hitung_ikla(mlu, kompleksitas, intensi, echolalia, konteks, token_len, tingkat_asd, is_neologism=False, is_abnormal_order=False, is_repetition=False, is_missing_subject=False):
     if kompleksitas == 'Kata Tunggal (K1)':
         skor_sintaksis = 8
     elif kompleksitas == 'Frasa (K2)' or kompleksitas == 'Kalimat Sederhana (K3)' and mlu == 2:
@@ -245,6 +252,9 @@ def hitung_ikla(mlu, kompleksitas, intensi, echolalia, konteks, token_len, tingk
     elif is_abnormal_order:
         skor_sintaksis = max(2, skor_sintaksis // 2)
         skor_leksikal = 16 if token_len > 3 else (10 if token_len >= 2 else 5)
+    elif is_missing_subject:
+        skor_sintaksis = max(2, int(skor_sintaksis / 1.5))
+        skor_leksikal = min(10, skor_leksikal)
     else:
         skor_leksikal = 16 if token_len > 3 else (10 if token_len >= 2 else 5)
 
@@ -261,6 +271,8 @@ def hitung_ikla(mlu, kompleksitas, intensi, echolalia, konteks, token_len, tingk
         total_skor = min(total_skor, 30)
     if is_abnormal_order:
         total_skor = min(total_skor, 60)
+    if is_missing_subject:
+        total_skor = min(total_skor, 70)
 
     if total_skor <= 30:
         level_asd = "Autisme Berat (DSM-5 Level 3)"
@@ -445,7 +457,7 @@ def gen_rekomendasi_tambahan(rincian_skor, mlu, echolalia):
 
     return hasil
 
-def sanity_check_prediksi(prediksi_pemahaman, prediksi_asd, mlu, skor_ikla):
+def sanity_check_prediksi(prediksi_pemahaman, prediksi_asd, mlu, skor_ikla, is_missing_subject=False):
     korreksi_p = prediksi_pemahaman
     korreksi_a = prediksi_asd
     alasan = []
@@ -469,7 +481,10 @@ def sanity_check_prediksi(prediksi_pemahaman, prediksi_asd, mlu, skor_ikla):
         korreksi_a = "ASD-2"
         alasan.append(f"MLU ({mlu}) terlalu tinggi untuk ASD-3, dikoreksi ke ASD-2")
 
-    if korreksi_p == "Sudah Mahir" and skor_ikla <= 60:
+    if is_missing_subject and mlu >= 3 and korreksi_p == "Sudah Mahir":
+        korreksi_p = "Berkembang Sedang"
+        alasan.append("Subjek tidak ditemukan pada kalimat ≥3 kata, dikoreksi ke 'Berkembang Sedang'")
+    elif korreksi_p == "Sudah Mahir" and skor_ikla <= 60:
         korreksi_p = "Berkembang Sedang"
         alasan.append(f"Skor IKLA ({skor_ikla}) tidak mendukung 'Sudah Mahir', dikoreksi ke 'Berkembang Sedang'")
     elif korreksi_p == "Berkembang Sedang" and skor_ikla <= 30:
@@ -509,6 +524,7 @@ with col_output:
 
             is_neologism = struktur_sintaksis_otomatis == "Neologisme"
             is_abnormal_order = deteksi_abnormal_order(pola_lanjutan)
+            is_missing_subject = deteksi_missing_subject(pola_lanjutan, mlu_hitung)
             is_repetition = struktur_lanjutan == "Repetisi"
             is_echolalia = struktur_lanjutan == "Echolalia"
             echolalia_efektif = "Ya" if (is_repetition or is_echolalia) else "Tidak"
@@ -533,9 +549,9 @@ with col_output:
                 prediksi_pemahaman = "Belum Berkembang"
                 prediksi_asd = "ASD-3"
 
-            skor_ikla, label_diagnosis, rincian_skor = hitung_ikla(mlu_hitung, kompleksitas_kalimat, intensi_komunikasi, echolalia_efektif, konteks, mlu_hitung, prediksi_asd, is_neologism=is_neologism, is_abnormal_order=is_abnormal_order, is_repetition=is_repetition)
+            skor_ikla, label_diagnosis, rincian_skor = hitung_ikla(mlu_hitung, kompleksitas_kalimat, intensi_komunikasi, echolalia_efektif, konteks, mlu_hitung, prediksi_asd, is_neologism=is_neologism, is_abnormal_order=is_abnormal_order, is_repetition=is_repetition, is_missing_subject=is_missing_subject)
 
-            prediksi_pemahaman, prediksi_asd, warning_sanity = sanity_check_prediksi(prediksi_pemahaman, prediksi_asd, mlu_hitung, skor_ikla)
+            prediksi_pemahaman, prediksi_asd, warning_sanity = sanity_check_prediksi(prediksi_pemahaman, prediksi_asd, mlu_hitung, skor_ikla, is_missing_subject=is_missing_subject)
 
             rekomendasi_utama = KAMUS_REKOMENDASI.get(prediksi_pemahaman, {}).get(intensi_komunikasi, None)
             rekomendasi_tambahan = gen_rekomendasi_tambahan(rincian_skor, mlu_hitung, echolalia_efektif)
