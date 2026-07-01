@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -20,7 +21,7 @@ model_ai = st.session_state.get("model", None)
 DATA_PATH = "dataset/dataset.csv"
 
 @st.cache_data
-def load_dataset():
+def load_dataset(_mtime):
     df = pd.read_csv(DATA_PATH, sep=";")
     df.fillna("Tidak Diketahui", inplace=True)
     return df
@@ -43,8 +44,8 @@ def build_pipeline():
     return pipeline
 
 @st.cache_data
-def prepare_data():
-    df = load_dataset()
+def prepare_data(_mtime):
+    df = load_dataset(_mtime)
     fitur_teks = 'Ujaran Bersih'
     fitur_kategorikal = ['Echolalia', 'Struktur Sintaksis', 'Kompleksitas Kalimat', 'Intensi Komunikasi']
     fitur_numerik = ['MLU']
@@ -58,10 +59,11 @@ if not model_ready:
     st.warning("Model tidak ditemukan. Evaluasi tidak dapat dilakukan.")
     st.stop()
 
-st.info(f"**Model:** Random Forest (100 estimators, multi-output)  |  **Target:** Kategori Pemahaman + ASD  |  **Dataset:** 132 sampel")
-
+mtime = os.path.getmtime(DATA_PATH) if os.path.exists(DATA_PATH) else 0
 pipeline = build_pipeline()
-X, y, groups, y_combined = prepare_data()
+X, y, groups, y_combined = prepare_data(mtime)
+
+st.info(f"**Model:** Random Forest (100 estimators, multi-output)  |  **Target:** Kategori Pemahaman + ASD  |  **Dataset:** {len(X)} sampel")
 
 y_pemahaman = y['Kategori Pemahaman']
 y_asd = y['ASD']
