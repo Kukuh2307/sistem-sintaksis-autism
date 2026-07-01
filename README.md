@@ -143,14 +143,15 @@ Parser dengan leksikon diperluas (~80 verba, ~80 nomina, ~30 keterangan, 6 negas
 
 **Aturan Parsing:**
 
-1. **Echolalia/Repetisi**: Input `echolalia == "Ya"` → label `"Echolalia"`; token >= 2 dan semua sama → `"Repetisi"`
-2. **Frasa Keterangan Bersambung**: Preposisi `di/ke/dari` → kata berikutnya otomatis `Ket`
-3. **Negasi**: `tidak`, `bukan`, dll → `Negasi`
-4. **Modal → P**: `mau`, `ingin`, `bisa`, `dapat`, `harus`, `akan` → `P` + tandai `has_predikat = True`
-5. **Verba → P**: Semua verba selalu jadi `P`, tidak peduli status `has_predikat` (verba setelah modal tetap P, bukan O)
-6. **Nomina**: Sebelum predikat pertama → `S`; setelah predikat → `O`
-7. **Fallback**: Kata di luar kamus → `S` (jika belum ada S), `P` (jika S sudah ada dan belum ada predikat), `O` (jika sudah ada predikat)
-8. **Reduksi Duplikasi**: Label identik berurutan digabung (P+P → P)
+1. **Echolalia**: Input `echolalia == "Ya"` ATAU token genap dengan pola ABAB → label `"Echolalia"`
+2. **Repetisi**: token >= 2 dan semua sama → `"Repetisi"` (tidak menangkap duplikasi 2× berurutan seperti `kupu kupu` yang merupakan kata ulang sah Bahasa Indonesia)
+3. **Frasa Keterangan Bersambung**: Preposisi `di/ke/dari` → kata berikutnya otomatis `Ket`
+4. **Negasi**: `tidak`, `bukan`, dll → `Negasi`
+5. **Modal → P**: `mau`, `ingin`, `bisa`, `dapat`, `harus`, `akan` → `P` + tandai `has_predikat = True`
+6. **Verba → P**: Semua verba selalu jadi `P`, tidak peduli status `has_predikat` (verba setelah modal tetap P, bukan O)
+7. **Nomina**: Sebelum predikat pertama → `S`; setelah predikat → `O`
+8. **Fallback**: Kata di luar kamus → `S` (jika belum ada S), `P` (jika S sudah ada dan belum ada predikat), `O` (jika sudah ada predikat)
+9. **Reduksi Duplikasi**: Label identik berurutan digabung (P+P → P)
 
 #### 2b. Rule-based Parser — untuk Feature ML
 
@@ -168,8 +169,8 @@ Parser berbasis kamus leksikon mini dan logika posisi kata (kiri ke kanan). Sama
 
 **Aturan Parsing:**
 
-1. **Echolalia**: Jika input `echolalia == "Ya"` → label `"Echolalia"`
-2. **Repetisi**: Jika token >= 2 dan `set(token)` hanya 1 unsur → label `"Repetisi"`
+1. **Echolalia**: jika input `echolalia == "Ya"` atau token genap dengan pola ABAB → label `"Echolalia"`
+2. **Repetisi**: jika token >= 2 dan `set(token)` hanya 1 unsur → label `"Repetisi"` (tidak menangkap duplikasi 2× berurutan yang merupakan kata ulang sah Bahasa Indonesia)
 3. **Frasa Keterangan Bersambung**: Preposisi `di/ke/dari` → kata berikutnya otomatis `Ket`
 4. **Negasi**: `tidak`, `bukan`, `jangan`, `belum` → `Negasi`
 5. **Modal → P**: `mau`, `ingin` → `P` + tandai `has_predikat = True`

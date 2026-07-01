@@ -31,8 +31,6 @@ def auto_parse_sintaksis(ujaran_bersih):
         return "Echolalia", []
     if len(token) >= 2 and len(set(token)) == 1:
         return "Repetisi", []
-    if len(token) >= 3 and any(token[i] == token[i+1] for i in range(len(token)-1)):
-        return "Repetisi", []
 
     stemmer = _get_stemmer()
 
@@ -140,8 +138,6 @@ def parse_sintaksis_lanjutan(ujaran_bersih):
     if len(token) >= 4 and len(token) % 2 == 0 and token[:len(token)//2] == token[len(token)//2:]:
         return "Echolalia", ["Echolalia"] * len(token)
     if len(token) >= 2 and len(set(token)) == 1:
-        return "Repetisi", ["Repetisi"] * len(token)
-    if len(token) >= 3 and any(token[i] == token[i+1] for i in range(len(token)-1)):
         return "Repetisi", ["Repetisi"] * len(token)
 
     stemmer = _get_stemmer()
