@@ -6,7 +6,12 @@ Sistem Hibrida Komputasional Linguistik & Pendukung Keputusan untuk Assessment L
 
 ## Gambaran Umum
 
-ATLAS adalah sistem berbasis **Streamlit** yang menganalisis ujaran anak autisme secara sintaksis dan pragmatik. Sistem menggabungkan **hybrid parser SPOK** (rule-based expanded lexicon untuk visualisasi + rule-based mini untuk ML), **model Machine Learning Random Forest**, serta **kalkulator klinis berbasis DSM-5** untuk menghasilkan diagnosis tingkat keparahan autisme dan rekomendasi intervensi terapi.
+ATLAS adalah sistem berbasis **Streamlit** yang menganalisis ujaran anak autisme secara sintaksis dan pragmatik. Sistem menggabungkan **hybrid parser SPOK** (rule-based expanded lexicon untuk visualisasi + rule-based mini untuk ML), **model Machine Learning multi-output Random Forest**, serta **kalkulator klinis berbasis DSM-5** untuk menghasilkan diagnosis tingkat keparahan autisme dan rekomendasi intervensi terapi.
+
+Fitur utama:
+- **Multi-output ML**: 1 model memprediksi **Kategori Pemahaman** (3 kelas) + **Tingkat ASD** (3 level) secara simultan
+- **IKLA otomatis**: Skor IKLA & DSM Level menggunakan output ASD dari ML, bukan input manual
+- **Sanity check**: Validasi inkonsistensi MLU → Pemahaman dan IKLA → Level
 
 ---
 
@@ -65,28 +70,30 @@ Input Ujaran Anak
 └─────────────┬───────────────┘
               │
               ▼
-┌─────────────────────────────┐
-│ Tahap 4: Prediksi ML        │
-│  - Random Forest (100 trees)│
-│  - Fitur: TF-IDF + OneHot + │
-│    StandardScaler           │
-│  - Akurasi: 93.96%          │
-│  Output: Belum Berkembang / │
-│          Berkembang Sedang /│
-│          Sudah Mahir        │
-└─────────────┬───────────────┘
-              │
-              ▼
-┌─────────────────────────────┐
-│ Tahap 5: Kalkulator IKLA    │
-│  - 6 komponen (Sintaksis,   │
-│    Leksikal, Pragmatik,     │
-│    Echolalia, Inisiasi,     │
-│    ASD Level)               │
-│  - Skor total maks: 90      │
-│  - Output: Level DSM-5      │
-│    (Ringan/Sedang/Berat)    │
-└─────────────┬───────────────┘
+┌──────────────────────────────────────┐
+│ Tahap 4: Prediksi ML (Multi-Output)  │
+│  - Random Forest (100 trees,         │
+│    multioutput.MultiOutputClassifier)│
+│  - Fitur: TF-IDF + OneHot +          │
+│    StandardScaler                    │
+│  - Akurasi Pemahaman: 94.16%         │
+│  - Akurasi ASD: 75.91%               │
+│  Output 1: Belum Berkembang /        │
+│            Berkembang Sedang /       │
+│            Sudah Mahir               │
+│  Output 2: ASD-1 / ASD-2 / ASD-3     │
+└─────────────┬────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────┐
+│ Tahap 5: Kalkulator IKLA (Auto-ASD)  │
+│  - 6 komponen (Sintaksis, Leksikal,  │
+│    Pragmatik, Echolalia, Inisiasi,   │
+│    ASD Level dari output ML)         │
+│  - Skor total maks: 90               │
+│  - Output: Level DSM-5               │
+│    (Ringan/Sedang/Berat)             │
+└─────────────┬────────────────────────┘
               │
               ▼
 ┌─────────────────────────────┐
@@ -132,6 +139,8 @@ Parser dengan leksikon diperluas (~80 verba, ~80 nomina, ~30 keterangan, 6 negas
 | **KATA_NEGASI** | 6 | `tidak`, `bukan`, `jangan`, `belum`, `tak`, `tiada` |
 | **KATA_MODAL** | 6 | `mau`, `ingin`, `bisa`, `dapat`, `harus`, `akan` |
 
+**Stemming dengan Sastrawi**: Sebelum lookup, setiap token di-*stem* (`stemmer.stem(token)`) untuk menangani variasi morfologis bahasa Indonesia — `memakan`, `dimakan`, `makannya` semua dikenali sebagai `makan`. Tanpa Sastrawi, afiksasi akan membuat gagal mencocokkan kamus.
+
 **Aturan Parsing:**
 
 1. **Echolalia/Repetisi**: Input `echolalia == "Ya"` → label `"Echolalia"`; token >= 2 dan semua sama → `"Repetisi"`
@@ -145,7 +154,7 @@ Parser dengan leksikon diperluas (~80 verba, ~80 nomina, ~30 keterangan, 6 negas
 
 #### 2b. Rule-based Parser — untuk Feature ML
 
-Parser berbasis kamus leksikon mini dan logika posisi kata (kiri ke kanan). Output tetap dipertahankan dalam format `S+P+O` yang konsisten dengan data training, sehingga **model ML tidak perlu retrain**.
+Parser berbasis kamus leksikon mini dan logika posisi kata (kiri ke kanan). Sama seperti parser 2a, setiap token di-*stem* dengan **Sastrawi** sebelum lookup kamus. Output tetap dipertahankan dalam format `S+P+O` yang konsisten dengan data training, sehingga **model ML tidak perlu retrain**.
 
 **Kamus Leksikon:**
 
@@ -188,27 +197,36 @@ Parser berbasis kamus leksikon mini dan logika posisi kata (kiri ke kanan). Outp
 | Konteks = instruksi ATAU mengandung `sudah`, `iya`, `belum` | **Answering** |
 | Default | **Commenting** |
 
-### Tahap 4: Prediksi Machine Learning (`model.ipynb`, implementasi di `app_pages/home.py:12–155`)
+### Tahap 4: Prediksi Machine Learning Multi-Output (`model.ipynb`, implementasi di `app_pages/home.py:528–542`)
 
-**Model**: Random Forest Classifier (100 trees, `random_state=42`, `class_weight='balanced'`)
+**Model**: `MultiOutputClassifier` (Random Forest 100 trees, `random_state=42`, `class_weight='balanced'`)
+
+**Dual Target**:
+| Target | Kelas | Distribusi |
+|---|---|---|
+| **Kategori Pemahaman** | Belum Berkembang / Berkembang Sedang / Sudah Mahir | 33 / 48 / 56 |
+| **Tingkat ASD** | ASD-1 / ASD-2 / ASD-3 | 39 / 66 / 32 |
 
 **Pipeline Preprocessing**:
 
 | Tipe Data | Kolom | Transformasi |
 |---|---|---|
 | Teks | `Ujaran Bersih` | TF-IDF Vectorizer (max 100 features) |
-| Kategorikal | `ASD`, `Echolalia`, `Struktur Sintaksis`, `Kompleksitas Kalimat`, `Intensi Komunikasi` | OneHotEncoder |
+| Kategorikal | `Echolalia`, `Struktur Sintaksis`, `Kompleksitas Kalimat`, `Intensi Komunikasi` | OneHotEncoder |
 | Numerik | `MLU` | StandardScaler |
 
-**Target** (3 kelas): `Belum Berkembang` (33), `Berkembang Sedang` (48), `Sudah Mahir` (51)
+> **Catatan**: `ASD` tidak digunakan sebagai fitur input ML untuk menghindari sirkularitas (ASD adalah target kedua).
 
-**Kinerja Model** (5-fold Stratified Cross-Validation):
-- Akurasi: **93.96%**
-- F1-score (macro): **93.99%**
+**Kinerja Model** (5-fold StratifiedGroupKFold, group by ID Anak):
+
+| Target | Akurasi | F1-Score (macro) |
+|---|---|---|
+| Kategori Pemahaman | **94.16%** | **94.02%** |
+| Tingkat ASD | **75.91%** | **74.88%** |
 
 **Fallback** (jika file `.pkl` tidak ditemukan):
-- MLU <= 1 → `Belum Berkembang`
-- MLU > 1 → `Sudah Mahir`
+- MLU <= 1 → `Belum Berkembang`, MLU > 1 → `Sudah Mahir`
+- ASD selalu fallback ke ASD-2 (netral)
 
 ### Tahap 5: Kalkulator IKLA — DSM-5 (`app_pages/home.py:178`)
 
@@ -223,7 +241,7 @@ Skor total maksimal: **90**, terdiri dari 6 komponen:
 | **Inisiasi** | 8 | Bermain/Bercerita = 8; Percakapan = 5; Deskripsi/Instruksi = 3 |
 | **ASD Level** | 10 | ASD-1 = 10; ASD-2 = 6; ASD-3 = 2 |
 
-**Opsi "Tidak tahu / Otomatis"**: Jika pengguna tidak mengetahui tingkat ASD anak, sistem menggunakan **ASD-2** sebagai default netral.
+> **ASD Level diisi otomatis** dari output prediksi ML (Tingkat ASD), bukan dari input manual user.
 
 #### Output Diagnosis DSM-5
 
@@ -233,7 +251,7 @@ Skor total maksimal: **90**, terdiri dari 6 komponen:
 | 31 – 60 | **Autisme Sedang (Level 2)** |
 | > 60 | **Autisme Ringan (Level 1)** |
 
-### Tahap 6: Sanity Check (`app_pages/home.py:371`)
+### Tahap 6: Sanity Check Dual-Target (`app_pages/home.py:371`)
 
 #### Validasi MLU vs Level Pemahaman
 
@@ -244,6 +262,10 @@ Skor total maksimal: **90**, terdiri dari 6 komponen:
 | Sudah Mahir | >= 4 |
 
 Jika prediksi ML tidak sesuai rentang MLU → koreksi paksa ke level yang sesuai.
+
+#### Validasi ASD vs Kategori Pemahaman
+
+Memeriksa inkonsistensi antara output ASD dan Kategori Pemahaman berdasarkan anomali yang ditemukan di dataset (~21% mismatch). Koreksi diterapkan jika ditemukan kombinasi yang tidak masuk akal secara linguistik.
 
 #### Validasi IKLA vs Level
 
@@ -280,61 +302,71 @@ Jika MLU <= 2 → rekomendasi ekspansi kalimat (+1 kata dari produksi anak).
 
 Dataset dapat dieksplorasi secara interaktif melalui halaman **Dataset** pada aplikasi, yang menampilkan tabel lengkap dengan filtering serta visualisasi distribusi berdasarkan berbagai kategori (ASD, jenis kelamin, konteks, kompleksitas, intensi, MLU, dll).
 
-**Sumber**: 65 anak autisme (A001–A065), 2 ujaran per anak = **132 sampel**
+**Sumber**: 65 anak autisme (A001–A065), 137 sampel ujaran (2–3 ujaran per anak)
 
-Dataset final (`dataset.csv`) memiliki **14 kolom** sebagai berikut:
+Dataset final (`dataset/dataset.csv`) memiliki **14 kolom** sebagai berikut:
 
 | # | Kolom | Deskripsi | Asal |
 |---|---|---|---|
-| 1 | `ID Anak` | Kode unik (A001–A065) | Data mentah |
-| 2 | `JK` | Jenis kelamin (L/P) | Data mentah |
-| 3 | `ASD` | Tingkat autisme (ASD-1/2/3) | Data mentah |
-| 4 | `Usia` | Usia dalam format tahun;bulan | Data mentah |
-| 5 | `Konteks` | Bermain, Percakapan, Bercerita, Deskripsi Gambar, Instruksi | Data mentah |
-| 6 | `Ujaran Anak` | Teks asli ujaran anak | Data mentah |
-| 7 | `Struktur Sintaksis` | Pola SPOK label manual | Data mentah |
-| 8 | `MLU` | Mean Length of Utterance (jumlah kata) | Data mentah |
-| 9 | `Echolalia` | Ya/Tidak | Data mentah |
-| 10 | `Ujaran Bersih` | Hasil preprocessing (case folding + cleaning) | preprocessing (`app_pages/home.py:12`) |
-| 11 | `Token` | Hasil tokenisasi dalam bentuk list | preprocessing (`app_pages/home.py:12`) |
-| 12 | `Kategori Pemahaman` | Belum Berkembang / Berkembang Sedang / Sudah Mahir | labeling manual saat pembuatan dataset |
-| 13 | `Kompleksitas Kalimat` | K1 (Kata Tunggal) / K2 (Frasa) / K3 (Kalimat Sederhana) / K4 (Kalimat Majemuk) | `app_pages/home.py:155` |
-| 14 | `Intensi Komunikasi` | Protesting / Requesting / Answering / Commenting | `app_pages/home.py:166` |
+| 1 | `ID Anak` | Kode unik (A001–A065) | `data_real_rev1.csv` |
+| 2 | `JK` | Jenis kelamin (L/P) | `data_real_rev1.csv` |
+| 3 | `ASD` | Tingkat autisme (ASD-1/2/3) | `data_real_rev1.csv` |
+| 4 | `Usia` | Usia dalam format tahun;bulan | `data_real_rev1.csv` |
+| 5 | `Konteks` | Bermain, Percakapan, Bercerita, Deskripsi Gambar, Instruksi | `data_real_rev1.csv` |
+| 6 | `Ujaran Anak` | Teks asli ujaran anak | `data_real_rev1.csv` |
+| 7 | `Struktur Sintaksis` | Pola SPOK label manual | `data_real_rev1.csv` |
+| 8 | `MLU` | Mean Length of Utterance (jumlah kata) | `data_real_rev1.csv` |
+| 9 | `Echolalia` | Ya/Tidak | `data_real_rev1.csv` |
+| 10 | `Ujaran Bersih` | Hasil preprocessing (case folding + cleaning) | generate script |
+| 11 | `Token` | Hasil tokenisasi dalam bentuk list | generate script |
+| 12 | `Kategori Pemahaman` | Belum Berkembang / Berkembang Sedang / Sudah Mahir | `data_real_rev1.csv` |
+| 13 | `Kompleksitas Kalimat` | K1–K4 (rule-based dari struktur sintaksis) | generate script |
+| 14 | `Intensi Komunikasi` | Protesting / Requesting / Answering / Commenting | generate script |
+
+> **Catatan**: `dataset/data_real_rev1.csv` adalah file master (9 kolom dasar, 137 baris). `dataset/dataset.csv` di-generate secara otomatis dengan menambahkan 5 kolom derived (Ujaran Bersih, Token, Kompleksitas Kalimat, Intensi Komunikasi, label Neologisme "Belum Berkembang"). Aplikasi hanya membaca `dataset.csv`.
 
 ---
 
-## Evaluasi Model
+## Evaluasi Model (Dual-Target)
 
-Halaman **Evaluasi Model** menyediakan analisis performa model Random Forest secara mendetail:
+Halaman **Evaluasi Model** menyediakan analisis performa model **multi-output Random Forest** secara mendetail untuk kedua target:
 
 | Fitur | Deskripsi |
 |---|---|
-| **Confusion Matrix** | Heatmap prediksi model vs label aktual pada seluruh dataset |
-| **Cross-Validation** | 5-fold Stratified CV — akurasi per fold, rata-rata akurasi (93.96%), F1-score (93.99%) |
-| **Classification Report** | Precision, recall, F1-score per kelas (Belum Berkembang, Berkembang Sedang, Sudah Mahir) |
-| **Feature Importance** | Top 20 fitur paling penting hasil ekstraksi dari Random Forest |
+| **Confusion Matrix (2 target)** | Heatmap per target — Kategori Pemahaman (3×3) dan Tingkat ASD (3×3) |
+| **Cross-Validation** | 5-fold StratifiedGroupKFold (group by ID Anak) — akurasi per fold + rata-rata |
+| **Classification Report** | Precision, recall, F1-score per kelas untuk masing-masing target |
+| **Feature Importance** | Top 20 fitur paling penting dari ekstraksi Random Forest |
 
-Model dievaluasi menggunakan metrik yang sama seperti pada notebook `model.ipynb`.
+### Performa Model Final
+
+| Target | Akurasi | F1 (macro) |
+|---|---|---|
+| Kategori Pemahaman | **94.16%** | **94.02%** |
+| Tingkat ASD | **75.91%** | **74.88%** |
+
+> Evaluasi menggunakan `StratifiedGroupKFold` agar ujaran dari anak yang sama tidak terpisah antar fold.
 
 ---
 
 ## Struktur File
 
 ```
-├── app.py                          # Entry point — navigasi multipage (st.navigation)
+├── app.py                          # Entry point — navigasi multipage + load model (cache via mtime)
 ├── app_pages/                      # Halaman-halaman aplikasi
-│   ├── home.py                     # Halaman Analisis (form input + dashboard)
+│   ├── home.py                     # Halaman Analisis (form input + dashboard ML multi-output)
 │   ├── dataset.py                  # Halaman Dataset (tabel + visualisasi data)
-│   └── evaluation.py               # Halaman Evaluasi Model (confusion matrix + metrik)
-├── model_autism_syntax_rf.pkl      # Model ML terlatih (Random Forest)
-├── model.ipynb                     # Notebook training model
+│   └── evaluation.py               # Halaman Evaluasi Model (dual-target CM + CV)
+├── model_autism_syntax_rf.pkl      # Model ML multi-output terlatih (Random Forest)
+├── model.ipynb                     # Notebook training model multi-output
 ├── version.py                      # Cek versi pustaka
 ├── requirements.txt                # Dependensi Python
 ├── README.md                       # Dokumentasi sistem
 ├── .streamlit/
 │   └── config.toml                 # Tema Fluent (Light, Blue #0078D4)
 └── dataset/
-    └── dataset.csv                 # Dataset final (14 kolom, 132 sampel)
+    ├── data_mentah.csv           # Dataset master (9 kolom dasar, 137 baris) — arsip
+    └── dataset.csv                 # Dataset final (14 kolom, 137 sampel)
 ```
 
 ---
@@ -344,8 +376,8 @@ Model dievaluasi menggunakan metrik yang sama seperti pada notebook `model.ipynb
 | Komponen | Tools |
 |---|---|
 | **Framework** | Streamlit 1.58.0 |
-| **Syntactic Parsing** | Rule-based Expanded Lexicon (~200 kata) |
-| **Machine Learning** | scikit-learn 1.6.1 (Random Forest) |
+| **Syntactic Parsing** | Rule-based Expanded Lexicon (~200 kata) + Sastrawi Stemmer |
+| **Machine Learning** | scikit-learn 1.6.1 (MultiOutput Random Forest) |
 | **Data Processing** | pandas 2.2.3 |
 | **Model Serialization** | joblib >= 1.3 |
 | **Text Processing** | regex (re) |

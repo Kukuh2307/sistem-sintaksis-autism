@@ -281,14 +281,6 @@ def hitung_ikla(mlu, kompleksitas, intensi, echolalia, konteks, token_len, tingk
         "ASD Level": (skor_asd, 10),
     }
 
-def sync_label_diagnosis(prediksi_pemahaman):
-    pemetaan = {
-        "Belum Berkembang": "Autisme Berat (DSM-5 Level 3)",
-        "Berkembang Sedang": "Autisme Sedang (DSM-5 Level 2)",
-        "Sudah Mahir": "Autisme Ringan (DSM-5 Level 1)",
-    }
-    return pemetaan.get(prediksi_pemahaman, "Tidak Teridentifikasi")
-
 KAMUS_REKOMENDASI = {
     'Belum Berkembang': {
         'Protesting': {
@@ -457,31 +449,38 @@ def gen_rekomendasi_tambahan(rincian_skor, mlu, echolalia):
 
     return hasil
 
-def sanity_check_prediksi(prediksi, mlu, skor_ikla):
-    korreksi = prediksi
-    alasan = None
+def sanity_check_prediksi(prediksi_pemahaman, prediksi_asd, mlu, skor_ikla):
+    korreksi_p = prediksi_pemahaman
+    korreksi_a = prediksi_asd
+    alasan = []
 
-    batas_mlu = {
+    batas_mlu_p = {
         "Belum Berkembang": (0, 1),
         "Berkembang Sedang": (2, 3),
         "Sudah Mahir": (4, float("inf")),
     }
-
-    for level, (min_kata, max_kata) in batas_mlu.items():
+    for level, (min_kata, max_kata) in batas_mlu_p.items():
         if min_kata <= mlu <= max_kata:
-            if prediksi != level:
-                korreksi = level
-                alasan = f"MLU ({mlu} kata) terlalu rendah untuk '{prediksi}', disesuaikan ke '{level}'"
+            if prediksi_pemahaman != level:
+                korreksi_p = level
+                alasan.append(f"MLU ({mlu}) tidak sesuai untuk '{prediksi_pemahaman}', dikoreksi ke '{level}'")
             break
 
-    if korreksi == "Sudah Mahir" and skor_ikla <= 60:
-        korreksi = "Berkembang Sedang"
-        alasan = f"Skor IKLA ({skor_ikla}) tidak mendukung 'Sudah Mahir', disesuaikan ke 'Berkembang Sedang'"
-    elif korreksi == "Berkembang Sedang" and skor_ikla <= 30:
-        korreksi = "Belum Berkembang"
-        alasan = f"Skor IKLA ({skor_ikla}) tidak mendukung 'Berkembang Sedang', disesuaikan ke 'Belum Berkembang'"
+    if mlu <= 1 and prediksi_asd == "ASD-1":
+        korreksi_a = "ASD-2"
+        alasan.append(f"MLU ({mlu}) terlalu rendah untuk ASD-1, dikoreksi ke ASD-2")
+    elif mlu >= 4 and prediksi_asd == "ASD-3":
+        korreksi_a = "ASD-2"
+        alasan.append(f"MLU ({mlu}) terlalu tinggi untuk ASD-3, dikoreksi ke ASD-2")
 
-    return korreksi, alasan
+    if korreksi_p == "Sudah Mahir" and skor_ikla <= 60:
+        korreksi_p = "Berkembang Sedang"
+        alasan.append(f"Skor IKLA ({skor_ikla}) tidak mendukung 'Sudah Mahir', dikoreksi ke 'Berkembang Sedang'")
+    elif korreksi_p == "Berkembang Sedang" and skor_ikla <= 30:
+        korreksi_p = "Belum Berkembang"
+        alasan.append(f"Skor IKLA ({skor_ikla}) tidak mendukung 'Berkembang Sedang', dikoreksi ke 'Belum Berkembang'")
+
+    return korreksi_p, korreksi_a, "; ".join(alasan) if alasan else None
 
 col_input, col_output = st.columns([1, 1.5])
 
@@ -518,41 +517,29 @@ with col_output:
             is_echolalia = struktur_lanjutan == "Echolalia"
             echolalia_efektif = "Ya" if (is_repetition or is_echolalia) else "Tidak"
 
-            if is_neologism or is_abnormal_order or is_repetition or is_echolalia:
-                tingkat_asd = "ASD-3"
-            else:
-                tingkat_asd = "ASD-2"
-
             if model_ready and model_ai is not None:
                 data_input_ml = pd.DataFrame([{
                     'Ujaran Bersih': ujaran_bersih,
-                    'ASD': tingkat_asd,
                     'Echolalia': echolalia_efektif,
                     'Struktur Sintaksis': struktur_sintaksis_otomatis,
                     'Kompleksitas Kalimat': kompleksitas_kalimat,
                     'Intensi Komunikasi': intensi_komunikasi,
                     'MLU': mlu_hitung
                 }])
-                prediksi_pemahaman = model_ai.predict(data_input_ml)[0]
+                preds = model_ai.predict(data_input_ml)
+                prediksi_pemahaman = preds[0][0]
+                prediksi_asd = preds[0][1]
             else:
                 prediksi_pemahaman = "Belum Berkembang" if mlu_hitung <= 1 else "Sudah Mahir"
+                prediksi_asd = "ASD-3" if mlu_hitung <= 1 else "ASD-1"
 
-            skor_ikla, label_diagnosis, rincian_skor = hitung_ikla(mlu_hitung, kompleksitas_kalimat, intensi_komunikasi, echolalia_efektif, konteks, mlu_hitung, tingkat_asd, is_neologism=is_neologism, is_abnormal_order=is_abnormal_order, is_repetition=is_repetition)
-
-            prediksi_pemahaman, warning_sanity = sanity_check_prediksi(prediksi_pemahaman, mlu_hitung, skor_ikla)
-
-            if is_neologism or is_abnormal_order or is_repetition:
+            if is_abnormal_order or is_repetition:
                 prediksi_pemahaman = "Belum Berkembang"
-                alasan = []
-                if is_neologism:
-                    alasan.append("neologisme")
-                if is_abnormal_order:
-                    alasan.append("urutan kata abnormal (P sebelum S)")
-                if is_repetition:
-                    alasan.append("repetisi")
-                warning_sanity = f"Deteksi {' & '.join(alasan)}, prediksi ditetapkan ke 'Belum Berkembang'"
+                prediksi_asd = "ASD-3"
 
-            label_diagnosis = sync_label_diagnosis(prediksi_pemahaman)
+            skor_ikla, label_diagnosis, rincian_skor = hitung_ikla(mlu_hitung, kompleksitas_kalimat, intensi_komunikasi, echolalia_efektif, konteks, mlu_hitung, prediksi_asd, is_neologism=is_neologism, is_abnormal_order=is_abnormal_order, is_repetition=is_repetition)
+
+            prediksi_pemahaman, prediksi_asd, warning_sanity = sanity_check_prediksi(prediksi_pemahaman, prediksi_asd, mlu_hitung, skor_ikla)
 
             rekomendasi_utama = KAMUS_REKOMENDASI.get(prediksi_pemahaman, {}).get(intensi_komunikasi, None)
             rekomendasi_tambahan = gen_rekomendasi_tambahan(rincian_skor, mlu_hitung, echolalia_efektif)
@@ -598,9 +585,10 @@ with col_output:
                 st.caption(":material/record_voice_over: **Echolalia terdeteksi** — Pola pengulangan frasa (ABAB) teridentifikasi secara otomatis.")
 
             st.subheader("2. Prediksi Kognitif & Pragmatik")
-            c1, c2 = st.columns(2)
+            c1, c2, c3 = st.columns(3)
             c1.info(f"**Pemahaman:** {prediksi_pemahaman}", icon=":material/psychology:")
-            c2.info(f"**Intensi:** {intensi_komunikasi}", icon=":material/chat:")
+            c2.info(f"**ASD:** {prediksi_asd}", icon=":material/neurology:")
+            c3.info(f"**Intensi:** {intensi_komunikasi}", icon=":material/chat:")
             if warning_sanity:
                 st.caption(f":material/tune: Sanity check: {warning_sanity}")
 
