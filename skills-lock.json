@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "Hacking Fundamentals": {
+      "source": "zebbern/secops-cli-guides",
+      "sourceType": "github",
+      "skillPath": "skills/hacking-fundamentals/SKILL.md",
+      "computedHash": "36da27fd9d7a1286f04ddbec783e998cf8f6b47f1b7a4051faf80cc156eaa903"
+    }
+  }
+}
