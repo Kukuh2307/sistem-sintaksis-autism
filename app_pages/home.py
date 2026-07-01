@@ -660,4 +660,4 @@ with col_output:
     elif tombol_analisis and not ujaran_anak:
         st.error("Ujaran anak tidak boleh kosong!", icon=":material/error:")
     else:
-        st.info("Form siap. Masukkan ujaran dan klik tombol di sebelah kiri.", icon=":material/info:")
+        st.info("Form siap. Tekan tombol untuk melihat hasil analisis.", icon=":material/info:")
