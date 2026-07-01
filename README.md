@@ -308,22 +308,22 @@ Dataset final (`dataset/dataset.csv`) memiliki **14 kolom** sebagai berikut:
 
 | # | Kolom | Deskripsi | Asal |
 |---|---|---|---|
-| 1 | `ID Anak` | Kode unik (A001–A065) | `data_real_rev1.csv` |
-| 2 | `JK` | Jenis kelamin (L/P) | `data_real_rev1.csv` |
-| 3 | `ASD` | Tingkat autisme (ASD-1/2/3) | `data_real_rev1.csv` |
-| 4 | `Usia` | Usia dalam format tahun;bulan | `data_real_rev1.csv` |
-| 5 | `Konteks` | Bermain, Percakapan, Bercerita, Deskripsi Gambar, Instruksi | `data_real_rev1.csv` |
-| 6 | `Ujaran Anak` | Teks asli ujaran anak | `data_real_rev1.csv` |
-| 7 | `Struktur Sintaksis` | Pola SPOK label manual | `data_real_rev1.csv` |
-| 8 | `MLU` | Mean Length of Utterance (jumlah kata) | `data_real_rev1.csv` |
-| 9 | `Echolalia` | Ya/Tidak | `data_real_rev1.csv` |
+| 1 | `ID Anak` | Kode unik (A001–A065) | `dataset.csv` |
+| 2 | `JK` | Jenis kelamin (L/P) | `dataset.csv` |
+| 3 | `ASD` | Tingkat autisme (ASD-1/2/3) | `dataset.csv` |
+| 4 | `Usia` | Usia dalam format tahun;bulan | `dataset.csv` |
+| 5 | `Konteks` | Bermain, Percakapan, Bercerita, Deskripsi Gambar, Instruksi | `dataset.csv` |
+| 6 | `Ujaran Anak` | Teks asli ujaran anak | `dataset.csv` |
+| 7 | `Struktur Sintaksis` | Pola SPOK label manual | `dataset.csv` |
+| 8 | `MLU` | Mean Length of Utterance (jumlah kata) | `dataset.csv` |
+| 9 | `Echolalia` | Ya/Tidak | `dataset.csv` |
 | 10 | `Ujaran Bersih` | Hasil preprocessing (case folding + cleaning) | generate script |
 | 11 | `Token` | Hasil tokenisasi dalam bentuk list | generate script |
-| 12 | `Kategori Pemahaman` | Belum Berkembang / Berkembang Sedang / Sudah Mahir | `data_real_rev1.csv` |
+| 12 | `Kategori Pemahaman` | Belum Berkembang / Berkembang Sedang / Sudah Mahir | `dataset.csv` |
 | 13 | `Kompleksitas Kalimat` | K1–K4 (rule-based dari struktur sintaksis) | generate script |
 | 14 | `Intensi Komunikasi` | Protesting / Requesting / Answering / Commenting | generate script |
 
-> **Catatan**: `dataset/data_real_rev1.csv` adalah file master (9 kolom dasar, 137 baris). `dataset/dataset.csv` di-generate secara otomatis dengan menambahkan 5 kolom derived (Ujaran Bersih, Token, Kompleksitas Kalimat, Intensi Komunikasi, label Neologisme "Belum Berkembang"). Aplikasi hanya membaca `dataset.csv`.
+> **Catatan**: `dataset/dataset.csv` adalah file master (9 kolom dasar, 137 baris). `dataset/dataset.csv` di-generate secara otomatis dengan menambahkan 5 kolom derived (Ujaran Bersih, Token, Kompleksitas Kalimat, Intensi Komunikasi, label Neologisme "Belum Berkembang"). Aplikasi hanya membaca `dataset.csv`.
 
 ---
 
