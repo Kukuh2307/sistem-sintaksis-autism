@@ -48,8 +48,9 @@ Input Ujaran Anak
 │  │ 2a. Rule-based Expanded     │    │
 │  │     Lexicon — untuk         │    │
 │  │     visualisasi anotasi     │    │
-│  │  ~200+ kata (verba, nomina, │    │
-│  │  keterangan, negasi, modal) │    │
+│  │  ~260+ kata (verba, nomina,    │    │
+│  │  keterangan, negasi, modal,    │    │
+│  │  partikel, ulang_terikat)      │    │
 │  └─────────────┬───────────────┘    │
 │                ▼                    │
 │  ┌─────────────────────────────┐    │
@@ -129,29 +130,35 @@ Input Ujaran Anak
 
 #### 2a. Rule-based Expanded Lexicon — untuk Visualisasi
 
-Parser dengan leksikon diperluas (~80 verba, ~80 nomina, ~30 keterangan, 6 negasi, 6 modal) untuk anotasi SPOK berwarna via `st-annotated-text`.
+Parser dengan leksikon diperluas (~94 verba, ~100 nomina, ~50 keterangan, 6 negasi, 6 modal, 4 partikel, 8 ulang_terikat) untuk anotasi SPOK berwarna via `st-annotated-text`.
 
 | Kategori | Jumlah | Contoh |
 |---|---|---|
-| **KATA_VERBA** | ~80 | `makan`, `minum`, `baca`, `cuci`, `beli`, `lari`, `mandi`, `tidur`, `tulis`, `buka`, ... |
-| **KATA_NOMINA** | ~80 | `saya`, `mama`, `papa`, `kakak`, `adik`, `buku`, `sepeda`, `piring`, `baju`, `bola`, ... |
-| **KATA_KET** | ~30 | `kemarin`, `tadi`, `nanti`, `di`, `ke`, `dari`, `sangat`, `cepat`, `sudah`, `sedang`, ... |
+| **KATA_VERBA** | ~94 | `makan`, `minum`, `baca`, `cuci`, `beli`, `lari`, `mandi`, `tidur`, `tulis`, `buka`, `jalan`, `kerja`, `masuk`, `gambar`, ... |
+| **KATA_NOMINA** | ~100 | `saya`, `mama`, `papa`, `kakak`, `adik`, `buku`, `sepeda`, `piring`, `baju`, `bola`, `rumah`, `tas`, `pintu`, `teman`, ... |
+| **KATA_KET** | ~50 | `kemarin`, `tadi`, `nanti`, `di`, `ke`, `dari`, `sangat`, `cepat`, `sudah`, `sedang`, `besar`, `kecil`, `banyak`, ... |
 | **KATA_NEGASI** | 6 | `tidak`, `bukan`, `jangan`, `belum`, `tak`, `tiada` |
 | **KATA_MODAL** | 6 | `mau`, `ingin`, `bisa`, `dapat`, `harus`, `akan` |
+| **KATA_PARTIKEL** | 4 | `ayo`, `mari`, `yuk`, `ayuk` (dipetakan sebagai `Ket`) |
+| **KATA_ULANG_TERIKAT** | 8 | `kura`, `kupu`, `laba`, `ubur`, `cumi`, `anai`, `onde`, `pari` (dikenali sebagai S/O) |
 
 **Stemming dengan Sastrawi**: Sebelum lookup, setiap token di-*stem* (`stemmer.stem(token)`) untuk menangani variasi morfologis bahasa Indonesia — `memakan`, `dimakan`, `makannya` semua dikenali sebagai `makan`. Tanpa Sastrawi, afiksasi akan membuat gagal mencocokkan kamus.
 
 **Aturan Parsing:**
 
 1. **Echolalia**: Input `echolalia == "Ya"` ATAU token genap dengan pola ABAB → label `"Echolalia"`
-2. **Repetisi**: token >= 2 dan semua sama → `"Repetisi"` (tidak menangkap duplikasi 2× berurutan seperti `kupu kupu` yang merupakan kata ulang sah Bahasa Indonesia)
-3. **Frasa Keterangan Bersambung**: Preposisi `di/ke/dari` → kata berikutnya otomatis `Ket`
-4. **Negasi**: `tidak`, `bukan`, dll → `Negasi`
-5. **Modal → P**: `mau`, `ingin`, `bisa`, `dapat`, `harus`, `akan` → `P` + tandai `has_predikat = True`
-6. **Verba → P**: Semua verba selalu jadi `P`, tidak peduli status `has_predikat` (verba setelah modal tetap P, bukan O)
-7. **Nomina**: Sebelum predikat pertama → `S`; setelah predikat → `O`
-8. **Fallback**: Kata di luar kamus → `S` (jika belum ada S), `P` (jika S sudah ada dan belum ada predikat), `O` (jika sudah ada predikat)
-9. **Reduksi Duplikasi**: Label identik berurutan digabung (P+P → P)
+2. **Repetisi**: token >= 2 dan semua sama → `"Repetisi"` — **dikecualikan** jika stem termasuk `KATA_ULANG_TERIKAT` (bound reduplication seperti `kura kura`, `kupu kupu` adalah kata ulang sah dan tidak dianggap repetisi patologis)
+3. **Neologisme**: Semua token tidak dikenal di `all_known` → `"Neologisme"` — **dikecualikan** jika token membentuk pola berpasangan dengan stem identik (bound reduplication)
+4. **Frasa Keterangan Bersambung**: Preposisi `di/ke/dari` → kata berikutnya otomatis `Ket`
+5. **Partikel → Ket**: `ayo`, `mari`, `yuk`, `ayuk` → `Ket`
+6. **Negasi**: `tidak`, `bukan`, dll → `Negasi`
+7. **Modal → P**: `mau`, `ingin`, `bisa`, `dapat`, `harus`, `akan` → `P` + tandai `has_predikat = True`
+8. **Verba → P**: Semua verba selalu jadi `P`, tidak peduli status `has_predikat` (verba setelah modal tetap P, bukan O)
+9. **Nomina**: Sebelum predikat pertama → `S`; setelah predikat → `O`
+10. **Reduplikasi (prev_stem)**: Stem identik berurutan (produktif, bukan bound) mendapat label yang sama → label digabung saat dedup
+11. **Interupsi Predikat**: Pola `P + Ket + P` (partikel di antara dua verba identik) → terdeteksi sebagai `is_interupsi`, menurunkan skor sintaksis IKLA
+12. **Fallback**: Kata di luar kamus → `S` (jika belum ada S), `P` (jika S sudah ada dan belum ada predikat), `O` (jika sudah ada predikat)
+13. **Reduksi Duplikasi**: Label identik berurutan digabung (P+P → P)
 
 #### 2b. Rule-based Parser — untuk Feature ML
 
@@ -162,23 +169,28 @@ Parser berbasis kamus leksikon mini dan logika posisi kata (kiri ke kanan). Sama
 | Kategori | Kata Kunci |
 |---|---|
 | **Negasi** | `tidak`, `bukan`, `jangan`, `belum` |
-| **Keterangan (Ket)** | `kemarin`, `besok`, `tadi`, `sekarang`, `sore`, `pagi`, `sangat`, `cepat`, `di`, `ke`, `dari`, `sini`, `sana`, `epat` |
-| **Modal (P)** | `mau`, `ingin` (kata kerja bantu, selalu jadi P) |
-| **Predikat (P/O)** | `minta`, `makan`, `minum`, `lari`, `main`, `duduk`, `lihat`, `putar`, `tidur`, `mandi`, `siram`, `baca`, `pergi` |
-| **Nomina (S/O)** | `aku`, `saya`, `kamu`, `dia`, `mama`, `papa`, `anak`, `mobil`, `bunga`, `sepeda`, `kucing`, `susu`, `air`, `buku`, `kebun`, `binatang`, `ini`, `itu` |
+| **Keterangan (Ket)** | `kemarin`, `besok`, `tadi`, `sekarang`, `sore`, `pagi`, `sangat`, `cepat`, `di`, `ke`, `dari`, `sini`, `sana`, `epat`, `lagi`, `bersama`, `nanti`, `sudah`, `sama`, `selamat`, `halo`, `maaf`, `besar`, `kecil`, `panjang`, `pendek`, `tinggi`, `berat`, `ringan`, `lambat`, `baru`, `lama`, `banyak`, `sedikit`, `semua`, `beberapa`, `masing` |
+| **Partikel (Ket)** | `ayo`, `mari`, `yuk`, `ayuk` |
+| **Modal (P)** | `mau`, `ingin`, `bisa`, `dapat`, `harus`, `akan` |
+| **Predikat (P/O)** | `minta`, `makan`, `minum`, `lari`, `main`, `duduk`, `lihat`, `putar`, `tidur`, `mandi`, `siram`, `baca`, `pergi`, `ajak`, `bawa`, `beli`, `buka`, `gambar`, `jalan`, `jatuh`, `ikut`, `kerja`, `masuk`, `naik`, `pakai`, `pulang`, `simpan`, `taruh`, `takut`, `suka`, `senang`, `ajar`, `rapi`, `sampai`, `habis`, `kasih`, `belikan` |
+| **Nomina (S/O)** | `aku`, `saya`, `kamu`, `dia`, `mama`, `papa`, `adik`, `ayah`, `ibu`, `bola`, `boneka`, `kereta`, `kuda`, `rumah`, `tas`, `pintu`, `tata`, `nama`, `anak`, `mobil`, `bunga`, `sepeda`, `kucing`, `susu`, `air`, `buku`, `kebun`, `binatang`, `ini`, `itu` |
+| **Ulang Terikat (S/O)** | `kura`, `kupu`, `laba`, `ubur`, `cumi`, `anai`, `onde`, `pari` |
 
 **Aturan Parsing:**
 
 1. **Echolalia**: jika input `echolalia == "Ya"` atau token genap dengan pola ABAB → label `"Echolalia"`
-2. **Repetisi**: jika token >= 2 dan `set(token)` hanya 1 unsur → label `"Repetisi"` (tidak menangkap duplikasi 2× berurutan yang merupakan kata ulang sah Bahasa Indonesia)
-3. **Frasa Keterangan Bersambung**: Preposisi `di/ke/dari` → kata berikutnya otomatis `Ket`
-4. **Negasi**: `tidak`, `bukan`, `jangan`, `belum` → `Negasi`
-5. **Modal → P**: `mau`, `ingin` → `P` + tandai `has_predikat = True`
-6. **Verba**: Sebelum predikat → `P`; setelah predikat → `O`
-7. **Logika S vs O**: Nomina sebelum predikat pertama = **S**; nomina setelah predikat = **O**
-8. **Fallback**: Kata di luar kamus → S (jika belum ada S), P (jika S sudah ada dan belum ada predikat), O (jika sudah ada predikat)
-9. **Reduksi Duplikasi**: Deretan label identik berurutan digabung (contoh: `[Ket, Ket, Ket]` → `[Ket]`)
-10. **Output**: String dipisah `+`, contoh: `"S+P+O"`, `"Echolalia"`, `"Repetisi"`
+2. **Repetisi**: jika token >= 2 dan `set(token)` hanya 1 unsur → label `"Repetisi"` — **dikecualikan** jika stem termasuk `kata_ulang_terikat`
+3. **Neologisme**: Semua stem tidak dikenal → `"Neologisme"` — **dikecualikan** jika token membentuk pasangan stem identik berurutan (bound reduplication)
+4. **Frasa Keterangan Bersambung**: Preposisi `di/ke/dari` → kata berikutnya otomatis `Ket`
+5. **Partikel → Ket**: `ayo`, `mari`, `yuk`, `ayuk` → `Ket`
+6. **Negasi**: `tidak`, `bukan`, `jangan`, `belum` → `Negasi`
+7. **Modal → P**: `mau`, `ingin`, `bisa`, `dapat`, `harus`, `akan` → `P` + tandai `has_predikat = True`
+8. **Verba**: Sebelum predikat → `P`; setelah predikat → `O`
+9. **Logika S vs O**: Nomina sebelum predikat pertama = **S**; nomina setelah predikat = **O**
+10. **Reduplikasi (prev_stem)**: Dua stem identik berurutan mendapat label yang sama
+11. **Fallback**: Kata di luar kamus → S (jika belum ada S), P (jika S sudah ada dan belum ada predikat), O (jika sudah ada predikat)
+12. **Reduksi Duplikasi**: Deretan label identik berurutan digabung (contoh: `[Ket, Ket, Ket]` → `[Ket]`)
+13. **Output**: String dipisah `+`, contoh: `"S+P+O"`, `"Echolalia"`, `"Repetisi"`
 
 ### Tahap 3a: Kompleksitas Kalimat (`app_pages/home.py:155`)
 
@@ -235,7 +247,7 @@ Skor total maksimal: **90**, terdiri dari 6 komponen:
 
 | Komponen | Maks | Kriteria Skor |
 |---|---|---|
-| **Sintaksis** | 24 | K4 / (K3 & MLU>=3) = 24; K2 / MLU=2 = 16; lainnya = 8 |
+| **Sintaksis** | 24 | K4 / (K3 & MLU>=3) = 24; K2 / MLU=2 = 16; lainnya = 8. **Interupsi predikat**: / 1.5 |
 | **Leksikal** | 16 | Token >3 = 16; Token >=2 = 10; Token =1 = 5 |
 | **Pragmatik** | 20 | Commenting/Answering = 20; Requesting = 13; Protesting = 9 |
 | **Echolalia** | 12 | "Tidak" = 12; "Ya" = 3 |
@@ -377,7 +389,7 @@ Halaman **Evaluasi Model** menyediakan analisis performa model **multi-output Ra
 | Komponen | Tools |
 |---|---|
 | **Framework** | Streamlit 1.58.0 |
-| **Syntactic Parsing** | Rule-based Expanded Lexicon (~200 kata) + Sastrawi Stemmer |
+| **Syntactic Parsing** | Rule-based Expanded Lexicon (~260+ kata) + Sastrawi Stemmer |
 | **Machine Learning** | scikit-learn 1.6.1 (MultiOutput Random Forest) |
 | **Data Processing** | pandas 2.2.3 |
 | **Model Serialization** | joblib >= 1.3 |
