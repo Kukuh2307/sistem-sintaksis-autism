@@ -27,29 +27,58 @@ def proses_teks_sintaksis(teks):
 
 def auto_parse_sintaksis(ujaran_bersih):
     token = ujaran_bersih.split()
-    if len(token) >= 4 and len(token) % 2 == 0 and token[:len(token)//2] == token[len(token)//2:]:
-        return "Echolalia", []
-    if len(token) >= 2 and len(set(token)) == 1:
-        return "Repetisi", []
 
     stemmer = _get_stemmer()
 
     kata_negasi = ['tidak', 'bukan', 'jangan', 'belum']
-    kata_ket = ['kemarin', 'besok', 'tadi', 'sekarang', 'sore', 'pagi', 'sangat', 'cepat', 'di', 'ke', 'dari', 'sini', 'sana', 'epat']
-    kata_modal = ['mau', 'ingin']
-    kata_predikat = ['minta', 'makan', 'minum', 'lari', 'main', 'duduk', 'lihat', 'putar', 'tidur', 'mandi', 'siram', 'baca', 'pergi']
-    kata_nomina = ['aku', 'saya', 'kamu', 'dia', 'mama', 'papa', 'anak', 'mobil', 'bunga', 'sepeda', 'kucing', 'susu', 'air', 'buku', 'kebun', 'binatang', 'ini', 'itu']
+    kata_ket = ['kemarin', 'besok', 'tadi', 'sekarang', 'sore', 'pagi', 'sangat', 'cepat', 'di', 'ke', 'dari', 'sini', 'sana', 'epat', 'lagi', 'bersama', 'bawah', 'nanti', 'sudah', 'sama', 'selamat', 'halo', 'maaf',
+                'besar', 'kecil', 'panjang', 'pendek', 'tinggi', 'berat', 'ringan', 'lambat', 'baru', 'lama',
+                'banyak', 'sedikit', 'semua', 'beberapa', 'masing']
+    kata_modal = ['mau', 'ingin', 'bisa', 'dapat', 'harus', 'akan']
+    kata_predikat = ['minta', 'makan', 'minum', 'lari', 'main', 'duduk', 'lihat', 'putar', 'tidur', 'mandi', 'siram', 'baca', 'pergi',
+                     'ajak', 'bawa', 'beli', 'buka', 'gambar', 'jalan', 'jatuh', 'ikut', 'kerja', 'masuk', 'naik', 'pakai',
+                     'pulang', 'simpan', 'taruh', 'takut', 'suka', 'senang', 'ajar', 'rapi', 'sampai', 'habis', 'kasih', 'belikan']
+    kata_nomina = ['aku', 'saya', 'kamu', 'dia', 'mama', 'papa', 'anak', 'mobil', 'bunga', 'sepeda', 'kucing', 'susu', 'air', 'buku', 'kebun', 'binatang', 'ini', 'itu',
+                   'adik', 'ayah', 'ibu', 'bola', 'boneka', 'kereta', 'kuda', 'rumah', 'tas', 'pintu', 'tata', 'nama']
+    kata_partikel = ['ayo', 'mari', 'yuk', 'ayuk']
+    kata_ulang_terikat = ['kura', 'kupu', 'laba', 'ubur', 'cumi', 'anai', 'onde', 'pari']
 
-    all_known = set(kata_negasi + kata_ket + kata_modal + kata_predikat + kata_nomina)
-    if all(stemmer.stem(t) not in all_known for t in token):
-        return "Neologisme", []
+    all_known = set(kata_negasi + kata_ket + kata_modal + kata_predikat + kata_nomina + kata_partikel + kata_ulang_terikat)
+
+    if len(token) >= 4 and len(token) % 2 == 0 and token[:len(token)//2] == token[len(token)//2:]:
+        return "Echolalia", []
+
+    if len(token) >= 2 and len(set(token)) == 1:
+        stem_base = stemmer.stem(token[0])
+        if stem_base in all_known and stem_base not in kata_ulang_terikat:
+            return "Repetisi", []
+
+    stems = [stemmer.stem(t) for t in token]
+    if all(s not in all_known for s in stems):
+        is_bound_redup = True
+        i = 0
+        while i < len(token):
+            if i + 1 < len(token) and stems[i] == stems[i + 1]:
+                i += 2
+            else:
+                is_bound_redup = False
+                break
+        if not is_bound_redup:
+            return "Neologisme", []
 
     pola_kasar = []
     has_predikat = False
     is_ket_phrase = False
+    prev_stem = None
 
-    for kata in token:
-        stem = stemmer.stem(kata)
+    for i, kata in enumerate(token):
+        stem = stems[i]
+
+        if stem == prev_stem and stem not in kata_negasi and pola_kasar:
+            pola_kasar.append(pola_kasar[-1])
+            continue
+
+        prev_stem = stem
         if is_ket_phrase:
             pola_kasar.append("Ket")
             is_ket_phrase = False
@@ -60,6 +89,8 @@ def auto_parse_sintaksis(ujaran_bersih):
             pola_kasar.append("Ket")
             if stem in ['di', 'ke', 'dari']:
                 is_ket_phrase = True
+        elif stem in kata_partikel:
+            pola_kasar.append("Ket")
         elif stem in kata_modal:
             pola_kasar.append("P")
             has_predikat = True
@@ -107,6 +138,8 @@ KATA_VERBA = [
     'masak', 'minum', 'minta', 'naik', 'pakai', 'panggil', 'pegang', 'pergi',
     'pukul', 'pulang', 'putar', 'robek', 'rusak', 'simpan', 'siram', 'taruh',
     'tendang', 'tidur', 'tulis', 'tusuk', 'tutup',
+    'ajak', 'jalan', 'kerja', 'masuk', 'suka', 'senang', 'takut', 'sampai',
+    'gambar', 'belikan', 'balap', 'milik', 'jumpa', 'jawab',
 ]
 
 KATA_NOMINA = [
@@ -121,38 +154,70 @@ KATA_NOMINA = [
     'saya', 'selimut', 'semangka', 'sendok', 'sepeda', 'sepatu', 'sisir',
     'spidol', 'sumpit', 'susu', 'tali', 'tamu', 'tangga', 'tape',
     'televisi', 'tenda', 'topi',
+    'apel', 'burung', 'gajah', 'ikan', 'kaki', 'kuda', 'mata',
+    'mi', 'nama', 'pesawat', 'petir', 'pintu', 'roti', 'rumah',
+    'sekolah', 'suara', 'tas', 'teman', 'mainan', 'kabar',
+    'kodok', 'tata',
 ]
+
+KATA_ULANG_TERIKAT = ['kura', 'kupu', 'laba', 'ubur', 'cumi', 'anai', 'onde', 'pari']
 
 KATA_KET = [
     'baru', 'bersama', 'besok', 'belum', 'cepat', 'cukup', 'dekat',
     'di', 'dari', 'dulu', 'hampir', 'hanya', 'jarang', 'kadang',
     'ke', 'kemarin', 'nanti', 'pagi', 'sana', 'sangat', 'sekarang', 'selalu',
     'sedang', 'sering', 'sini', 'sore', 'sudah', 'tetap', 'tadi',
-    'terlalu', 'epat',
+    'terlalu', 'epat', 'lagi', 'bawah', 'sama', 'selamat', 'halo', 'maaf',
+    'besar', 'kecil', 'panjang', 'pendek', 'tinggi', 'berat', 'ringan', 'lambat', 'lama',
+    'banyak', 'sedikit', 'semua', 'beberapa', 'masing',
 ]
+
+KATA_PARTIKEL = ['ayo', 'mari', 'yuk', 'ayuk']
 
 KATA_NEGASI = ['tidak', 'bukan', 'jangan', 'belum', 'tak', 'tiada']
 KATA_MODAL = ['mau', 'ingin', 'bisa', 'dapat', 'harus', 'akan']
 
 def parse_sintaksis_lanjutan(ujaran_bersih):
     token = ujaran_bersih.split()
-    if len(token) >= 4 and len(token) % 2 == 0 and token[:len(token)//2] == token[len(token)//2:]:
-        return "Echolalia", ["Echolalia"] * len(token)
-    if len(token) >= 2 and len(set(token)) == 1:
-        return "Repetisi", ["Repetisi"] * len(token)
 
     stemmer = _get_stemmer()
 
-    all_known = set(KATA_VERBA + KATA_NOMINA + KATA_KET + KATA_NEGASI + KATA_MODAL)
-    if all(stemmer.stem(t) not in all_known for t in token):
-        return "Neologisme", ["Neologisme"] * len(token)
+    all_known = set(KATA_VERBA + KATA_NOMINA + KATA_KET + KATA_NEGASI + KATA_MODAL + KATA_PARTIKEL + KATA_ULANG_TERIKAT)
+
+    if len(token) >= 4 and len(token) % 2 == 0 and token[:len(token)//2] == token[len(token)//2:]:
+        return "Echolalia", ["Echolalia"] * len(token)
+
+    if len(token) >= 2 and len(set(token)) == 1:
+        stem_base = stemmer.stem(token[0])
+        if stem_base in all_known and stem_base not in KATA_ULANG_TERIKAT:
+            return "Repetisi", ["Repetisi"] * len(token)
+
+    stems = [stemmer.stem(t) for t in token]
+    if all(s not in all_known for s in stems):
+        is_bound_redup = True
+        i = 0
+        while i < len(token):
+            if i + 1 < len(token) and stems[i] == stems[i + 1]:
+                i += 2
+            else:
+                is_bound_redup = False
+                break
+        if not is_bound_redup:
+            return "Neologisme", ["Neologisme"] * len(token)
 
     token_roles = []
     has_predikat = False
     is_ket_phrase = False
+    prev_stem = None
 
-    for kata in token:
-        stem = stemmer.stem(kata)
+    for i, kata in enumerate(token):
+        stem = stems[i]
+
+        if stem == prev_stem and stem not in KATA_NEGASI and token_roles:
+            token_roles.append(token_roles[-1])
+            continue
+
+        prev_stem = stem
         if is_ket_phrase:
             token_roles.append("Ket")
             is_ket_phrase = False
@@ -163,6 +228,8 @@ def parse_sintaksis_lanjutan(ujaran_bersih):
             token_roles.append("Ket")
             if stem in ('di', 'ke', 'dari'):
                 is_ket_phrase = True
+        elif stem in KATA_PARTIKEL:
+            token_roles.append("Ket")
         elif stem in KATA_MODAL:
             token_roles.append("P")
             has_predikat = True
@@ -224,6 +291,12 @@ def deteksi_missing_subject(token_roles, mlu):
         return False
     return "S" not in token_roles and "P" in token_roles
 
+def deteksi_interupsi_predikat(token_roles):
+    for i in range(1, len(token_roles) - 1):
+        if token_roles[i-1] == "P" and token_roles[i] == "Ket" and token_roles[i+1] == "P":
+            return True
+    return False
+
 def tentukan_intensi(ujaran, konteks):
     ujaran = str(ujaran).strip().lower()
     konteks = str(konteks).strip().lower()
@@ -236,7 +309,7 @@ def tentukan_intensi(ujaran, konteks):
     else:
         return 'Commenting'
 
-def hitung_ikla(mlu, kompleksitas, intensi, echolalia, konteks, token_len, tingkat_asd, is_neologism=False, is_abnormal_order=False, is_repetition=False, is_missing_subject=False):
+def hitung_ikla(mlu, kompleksitas, intensi, echolalia, konteks, token_len, tingkat_asd, is_neologism=False, is_abnormal_order=False, is_repetition=False, is_missing_subject=False, is_interupsi=False):
     if kompleksitas == 'Kata Tunggal (K1)':
         skor_sintaksis = 8
     elif kompleksitas == 'Frasa (K2)' or kompleksitas == 'Kalimat Sederhana (K3)' and mlu == 2:
@@ -249,6 +322,9 @@ def hitung_ikla(mlu, kompleksitas, intensi, echolalia, konteks, token_len, tingk
     if is_neologism:
         skor_sintaksis = 2
         skor_leksikal = 5
+    elif is_interupsi:
+        skor_sintaksis = max(2, int(skor_sintaksis / 1.5))
+        skor_leksikal = 10 if token_len >= 2 else 5
     elif is_abnormal_order:
         skor_sintaksis = max(2, skor_sintaksis // 2)
         skor_leksikal = 16 if token_len > 3 else (10 if token_len >= 2 else 5)
@@ -270,6 +346,8 @@ def hitung_ikla(mlu, kompleksitas, intensi, echolalia, konteks, token_len, tingk
     if is_repetition and tingkat_asd == "ASD-3":
         total_skor = min(total_skor, 30)
     if is_abnormal_order:
+        total_skor = min(total_skor, 60)
+    if is_interupsi:
         total_skor = min(total_skor, 60)
     if is_missing_subject:
         total_skor = min(total_skor, 70)
@@ -524,7 +602,9 @@ with col_output:
 
             is_neologism = struktur_sintaksis_otomatis == "Neologisme"
             is_abnormal_order = deteksi_abnormal_order(pola_lanjutan)
-            is_missing_subject = deteksi_missing_subject(pola_lanjutan, mlu_hitung)
+            is_interupsi = deteksi_interupsi_predikat(pola_lanjutan)
+            has_partikel = any(w in KATA_PARTIKEL for w in token_list)
+            is_missing_subject = deteksi_missing_subject(pola_lanjutan, mlu_hitung) and not has_partikel
             is_repetition = struktur_lanjutan == "Repetisi"
             is_echolalia = struktur_lanjutan == "Echolalia"
             echolalia_efektif = "Ya" if (is_repetition or is_echolalia) else "Tidak"
@@ -545,11 +625,11 @@ with col_output:
                 prediksi_pemahaman = "Belum Berkembang" if mlu_hitung <= 1 else "Sudah Mahir"
                 prediksi_asd = "ASD-3" if mlu_hitung <= 1 else "ASD-1"
 
-            if is_abnormal_order or is_repetition:
+            if is_interupsi or is_abnormal_order or is_repetition:
                 prediksi_pemahaman = "Belum Berkembang"
                 prediksi_asd = "ASD-3"
 
-            skor_ikla, label_diagnosis, rincian_skor = hitung_ikla(mlu_hitung, kompleksitas_kalimat, intensi_komunikasi, echolalia_efektif, konteks, mlu_hitung, prediksi_asd, is_neologism=is_neologism, is_abnormal_order=is_abnormal_order, is_repetition=is_repetition, is_missing_subject=is_missing_subject)
+            skor_ikla, label_diagnosis, rincian_skor = hitung_ikla(mlu_hitung, kompleksitas_kalimat, intensi_komunikasi, echolalia_efektif, konteks, mlu_hitung, prediksi_asd, is_neologism=is_neologism, is_abnormal_order=is_abnormal_order, is_repetition=is_repetition, is_missing_subject=is_missing_subject, is_interupsi=is_interupsi)
 
             prediksi_pemahaman, prediksi_asd, warning_sanity = sanity_check_prediksi(prediksi_pemahaman, prediksi_asd, mlu_hitung, skor_ikla, is_missing_subject=is_missing_subject)
 
